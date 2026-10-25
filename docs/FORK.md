@@ -75,10 +75,13 @@ Licences and attribution for each upstream are in
 
 - **PeeringDB** (`internet-infrastructure`, `datacenters` feed): its
   acceptable-use policy forbids bulk reproduction except for "Internet
-  operational" use. The fork keeps the list in server memory only, but serving
-  it to the public needs PeeringDB's permission, or the feed turned off.
-  Anonymous PeeringDB requests are also throttled (HTTP 429); the kit backs
-  off 60 s and the feed then loads.
+  operational" use. The fork keeps the list in server memory only.
+  **Accepted decision (2026-10-25, the operator):** the feed stays on for this
+  deployment, which sits behind an NPM Access List login and is the operator's
+  own research use. A deployment opened to other people needs PeeringDB's
+  permission, or the feed turned off.
+  Anonymous PeeringDB requests are throttled (HTTP 429 with a Retry-After of
+  up to ~45 min); the kit waits out the Retry-After before asking again.
 - **Smithsonian GVP** reuse terms could not be re-read (the site is behind bot
   verification); confirm them before commercial or bulk redistribution.
 - **IODA** responses carry a Georgia Tech "all rights reserved" notice; data is
