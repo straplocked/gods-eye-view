@@ -88,6 +88,7 @@ const PANEL_GROUPS = [
       'weather-lightning',
       'weather-cyclones',
       'weather-warnings',
+      'aviation-weather',
     ],
   },
   {

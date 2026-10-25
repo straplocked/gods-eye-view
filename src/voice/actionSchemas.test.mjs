@@ -44,8 +44,8 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // Restore base descriptions; append only globe-rotation defaults and fit guidance.
     // Global Hazards (the first keyless-feed layer) extends the manifest;
     // Weather & Tsunami Warnings adds a toggle-only entry; Volcanoes adds another;
-    // Aurora & Space Weather adds a fourth.
-    'dd860ce538ee890a756b85f3de11588875e63a275076b9258d7b9449b0c0d1ec',
+    // Aurora & Space Weather adds a fourth; Aviation Weather adds a fifth.
+    'fb69b225f1066736cad75dfc4490433f0131c68ebd7f056d4980b9709e5c0415',
   );
 });
 

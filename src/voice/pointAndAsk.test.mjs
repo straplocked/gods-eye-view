@@ -362,8 +362,13 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // so it was left out rather than raising the ceiling again. One character
   // is spare: the next keyless layer has to decide (voice-off, trimming
   // elsewhere or a new budget).
+  // Aviation Weather is the fifth: a toggle with no alias costs 38 characters
+  // (52,287) because its id is long and sits in two enums. Decision: raise the
+  // ceiling by 50 to 52,300 so the layer keeps its voice toggle rather than
+  // going voice-off (a pilot-facing layer people will ask for by name); 13
+  // characters are spare, so the next keyless layer has the same decision.
   const size = instructions.length + JSON.stringify(GEV_REALTIME_TOOLS).length;
-  assert.ok(size <= 52250, `prompt size ${size}`);
+  assert.ok(size <= 52300, `prompt size ${size}`);
 });
 
 

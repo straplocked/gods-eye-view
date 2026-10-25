@@ -30,6 +30,7 @@ import { globalHazardsProxy } from './globalHazards.js';
 import { weatherWarningsProxy } from './weatherWarnings.js';
 import { volcanoesProxy } from './volcanoes.js';
 import { spaceWeatherProxy } from './spaceWeather.js';
+import { aviationWeatherProxy } from './aviationWeather.js';
 import { cycloneProxy } from './cyclones.js';
 import { windProxy } from './wind.js';
 
@@ -72,6 +73,7 @@ function localProviderPlugins({ realtime, gemini } = {}) {
     weatherWarningsProxy(),
     volcanoesProxy(),
     spaceWeatherProxy(),
+    aviationWeatherProxy(),
     keySetupEndpoint(),
   ];
 }

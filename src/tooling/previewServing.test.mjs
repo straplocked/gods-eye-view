@@ -15,6 +15,7 @@ test('data providers have both hooks; credential editing stays development-only'
   assert.ok(plugins.some(({ name }) => name === 'weather-warnings'));
   assert.ok(plugins.some(({ name }) => name === 'volcanoes'));
   assert.ok(plugins.some(({ name }) => name === 'space-weather'));
+  assert.ok(plugins.some(({ name }) => name === 'aviation-weather'));
   for (const plugin of plugins) {
     if (plugin.name === 'gev-key-setup') {
       assert.equal(plugin.configurePreviewServer, undefined);
@@ -118,6 +119,8 @@ test('real dev and built-preview servers serve provider JSON and terminate unkno
         ['/api/v1/layers/volcanoes/unknown', 404],
         ['/api/v1/layers/space-weather/status', 200],
         ['/api/v1/layers/space-weather/unknown', 404],
+        ['/api/v1/layers/aviation-weather/status', 200],
+        ['/api/v1/layers/aviation-weather/unknown', 404],
         ['/api/terrain/heights?points=invalid', 400],
         ['/api/overpass', 405],
         ['/api/overpass/status', 200],
@@ -154,6 +157,16 @@ test('real dev and built-preview servers serve provider JSON and terminate unkno
             [
               ['gdacs', false],
               ['eonet', false],
+            ],
+            route,
+          );
+        if (route === '/api/v1/layers/aviation-weather/status')
+          assert.deepEqual(
+            body.sources.map(({ id, cached }) => [id, cached]),
+            [
+              ['metar', false],
+              ['sigmet', false],
+              ['isigmet', false],
             ],
             route,
           );
