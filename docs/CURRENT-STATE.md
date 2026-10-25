@@ -3727,6 +3727,7 @@ its criteria cannot be silently ignored.
 | Buoys & River Gauges 🌊 (`water-observations`) | NOAA NDBC latest observations (buoys and coastal stations, points colored by wind speed) + NWPS river gauges at or above flood action stage (observed or forecast; fetched in eight bounding-box tiles); keyless | `src/layers/waterObservations/` via `src/app/layers/waterObservations.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/water-observations` (+ `/status`) | 15 min (server caches: buoys 15 min, rivers 15 min) |
 | Citizen Air & Radiation Sensors ☢️ (`citizen-sensors`) | Sensor.Community outdoor particulate sensors binned to a 0.1° grid (median PM2.5 per cell, colored by US EPA AQI category) + the latest Safecast radiation reading of each device in the last 6 hours (cpm or µSv/h, colored by dose rate); keyless | `src/layers/citizenSensors/` via `src/app/layers/citizenSensors.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/citizen-sensors` (+ `/status`) | 10 min (server caches: particulates 10 min, radiation 30 min) |
 | Internet Outages & Data Centers 🌐 (`internet-infrastructure`) | Georgia Tech IODA internet outage alerts as one marker per country (going now or ended in the last 24 hours, colored by level, at a hand-written country position) + PeeringDB data center and interconnection facilities as points sized by the networks present; keyless | `src/layers/internetInfrastructure/` via `src/app/layers/internetInfrastructure.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/internet-infrastructure` (+ `/status`) | 10 min (server caches: outages 10 min, data centers 24 h) |
+| Geolocated News (GDELT) 📰 (`news-events`) | The newest GDELT 2.0 GKG batch aggregated into one point per geocoded place (article count, mean tone, conflict flag, top themes, five latest headlines); keyless | `src/layers/newsEvents/` via `src/app/layers/newsEvents.js` on the shared kit (`src/layers/common/`); zip reader in `server/providers/common/zip.js` | `/api/v1/layers/news-events` (+ `/status`) | 15 min (server cache 15 min) |
 | Weather & Tsunami Warnings ⛈️ (`weather-warnings`) | NWS active alerts (areas: the alert polygon, or the union of its NWS zones from a 7-day zone cache) + NOAA tsunami.gov bulletins (PAAQ, PHEB; one point each); keyless | `src/layers/weatherWarnings/` via `src/app/layers/weatherWarnings.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/weather-warnings` (+ `/status`) | 2 min (server caches: NWS 2 min, tsunami 5 min) |
 
 GNSS Integrity samples a 250 nm circle around the Earth point under the screen
@@ -3937,6 +3938,33 @@ Markers are signals, not confirmed outages: informational only. Voice: toggle
 only; the 23-character id cost 52 characters of the Realtime prompt, so the
 `fly_to_location` `rangeM` description was trimmed by 59 characters instead of
 raising the ceiling.
+
+Geolocated News (GDELT) (`news-events`, layer token `04`) is the tenth layer on
+the kit, in the Events group of the Layers panel, with one subsource, `gdelt`.
+GDELT publishes a Global Knowledge Graph batch every 15 minutes as a zip of one
+tab-separated file (GKG 2.1: 27 columns, one record per article, no article
+text). The server reads `lastupdate.txt`, downloads the GKG zip it names (about
+2 MB), checks the size and md5 the pointer states, inflates the single entry
+with `node:zlib` under hard caps (10 MB zipped, 80 MB inflated, CRC-32 verified,
+`server/providers/common/zip.js`) and aggregates the records by place: the
+article count, mean tone, whether any article has a conflict, unrest or terror
+theme, the top themes and the five most recent articles (source, page title,
+tone, time and, when https, a link). A country-level mention is dropped when
+the same article names a state or city in that country, a record counts for at
+most 20 places, corrupt lines and malformed location blocks are skipped one by
+one, and a batch with no readable record fails the feed instead of becoming an
+empty map. The busiest 2,000 places are served and the cut is reported
+(`truncated`). A pointer that still names the batch already served costs no
+second download; if the pointed file is missing (GDELT has been seen naming a
+batch with no files) up to six earlier batches are tried and the snapshot says
+`md5Verified: false`. Points are red where a quarter or more of the articles
+have conflict themes, blue otherwise,
+sized by the article count; a click card lists the tone, themes and the three
+latest headlines and opens the newest https article. GDELT geocodes by machine,
+so a point is where a place was named, not necessarily where the event
+happened: informational only. Voice: toggle only; the layer cost 28 characters
+of the Realtime prompt, so the Cockpit contact-layer filter description was
+trimmed by 26 instead of raising the ceiling.
 
 Street Level is a docked, collapsible right-rail panel (`#street-level-panel`,
 layer token `0`, option owner `street-level`, panel `ui` token `t`) that starts

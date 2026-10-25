@@ -140,7 +140,7 @@ export const ACTION_DESCRIPTIONS = {
         },
         targetLayer: {
           description:
-            'Optional contact layer filter for next/previous (for example military for a military-only cycle).',
+            'Optional contact layer filter for next/previous (for example military).',
           $position: 2,
         },
         aircraftClass: {

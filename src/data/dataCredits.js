@@ -243,6 +243,12 @@ export const DATA_CREDITS = [
       'data centers: ' +
       '<a href="https://www.peeringdb.com/" target="_blank" rel="noopener">PeeringDB</a>',
   },
+  {
+    key: 'news-events',
+    html:
+      'Geolocated news: ' +
+      '<a href="https://www.gdeltproject.org/" target="_blank" rel="noopener">The GDELT Project</a>',
+  },
   OSM_CREDIT,
   OPENMAPTILES_CREDIT,
   {

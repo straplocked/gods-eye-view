@@ -162,7 +162,22 @@ export function createUpstreamClient({
     }
   }
 
-  return { fetch: request, fetchJson, fetchText };
+  /**
+   * GET a binary body (a zip, an image) under a byte cap. A status in
+   * `emptyStatuses` returns null; any other non-2xx throws `upstream_status`.
+   * @returns {Promise<Uint8Array|null>}
+   */
+  async function fetchBytes(url, options = {}) {
+    const response = await open(url, options);
+    if (!response) return null;
+    return readResponseBytesCapped(
+      response,
+      options.maxBytes ?? maxBytes,
+      signal,
+    );
+  }
+
+  return { fetch: request, fetchJson, fetchText, fetchBytes };
 }
 
 const RESERVED_SOURCE_KEYS = new Set([
@@ -225,7 +240,7 @@ function validateConfig({ name, layerId, subsources }) {
  * Build the Vite plugin for one keyless layer.
  *
  * Each subsource is `{id, fetchSnapshot, ttlMs?, timeoutMs?, maxBytes?}`;
- * `fetchSnapshot({fetchImpl, fetchJson, fetchText, signal, now})` resolves a
+ * `fetchSnapshot({fetchImpl, fetchJson, fetchText, fetchBytes, signal, now})` resolves a
  * FeatureCollection whose features carry a non-empty string `id` unique within
  * that subsource, and throws (e.g. `invalidPayload()`) on a corrupt payload —
  * a thrown refresh is never cached, so it cannot become an empty snapshot.
@@ -300,6 +315,7 @@ export function createKeylessFeedProxy({
       fetchImpl: client.fetch,
       fetchJson: client.fetchJson,
       fetchText: client.fetchText,
+      fetchBytes: client.fetchBytes,
       signal,
       now,
     });

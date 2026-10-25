@@ -393,6 +393,11 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // meaning: automatic framing), which leaves the prompt at 52,336 under the
   // unchanged 52,350 ceiling and 14 characters spare. Another layer with a
   // long id would not fit: it has to trim again or go voice-off.
+  // Geolocated News is the tenth: its 11-character id and `noQuery` text cost 28
+  // (52,364) against 14 spare. Decision: trim, not raise. The Cockpit
+  // contact-layer filter description lost " for a military-only cycle" (26
+  // characters, the example "military" still says it), which leaves the prompt
+  // at 52,338 under the unchanged 52,350 ceiling and 12 characters spare.
   const size = instructions.length + JSON.stringify(GEV_REALTIME_TOOLS).length;
   assert.ok(size <= 52350, `prompt size ${size}`);
 });

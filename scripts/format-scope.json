@@ -1150,5 +1150,13 @@
   "src/layers/internetInfrastructure/source.test.mjs",
   "src/layers/internetInfrastructure/cards.test.mjs",
   "src/layers/internetInfrastructure/ownership.test.mjs",
-  "src/testSupport/internetInfrastructureFixtures.mjs"
+  "src/testSupport/internetInfrastructureFixtures.mjs",
+  "server/providers/common/zip.test.mjs",
+  "src/data/newsEventsProxy.test.mjs",
+  "src/layers/newsEvents/records.test.mjs",
+  "src/layers/newsEvents/source.test.mjs",
+  "src/layers/newsEvents/cards.test.mjs",
+  "src/layers/newsEvents/ownership.test.mjs",
+  "src/testSupport/newsEventsFixtures.mjs",
+  "src/testSupport/zip.mjs"
 ]
