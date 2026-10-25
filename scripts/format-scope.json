@@ -1107,5 +1107,11 @@
   "src/layers/weatherWarnings/source.test.mjs",
   "src/layers/weatherWarnings/cards.test.mjs",
   "src/layers/weatherWarnings/ownership.test.mjs",
-  "src/testSupport/weatherWarningsFixtures.mjs"
+  "src/testSupport/weatherWarningsFixtures.mjs",
+  "src/data/volcanoesProxy.test.mjs",
+  "src/layers/volcanoes/records.test.mjs",
+  "src/layers/volcanoes/source.test.mjs",
+  "src/layers/volcanoes/cards.test.mjs",
+  "src/layers/volcanoes/ownership.test.mjs",
+  "src/testSupport/volcanoesFixtures.mjs"
 ]

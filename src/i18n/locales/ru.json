@@ -3062,5 +3062,21 @@
   "Weather alert": "Погодное предупреждение",
   "Areas are US National Weather Service alerts colored by severity; dots are NOAA tsunami bulletins colored by level. Alerts whose zone boundaries are still loading appear on a later refresh. Not for life-safety decisions.": "Области — оповещения Национальной метеорологической службы США, цвет показывает тяжесть; точки — бюллетени NOAA о цунами, цвет показывает уровень. Оповещения, границы зон которых ещё загружаются, появятся при следующем обновлении. Не для решений, связанных с безопасностью жизни.",
   "Weather & Tsunami Warnings": "Погодные предупреждения и цунами",
-  "NWS": "NWS"
+  "NWS": "NWS",
+  "Yellow": "Жёлтый",
+  "Orange": "Оранжевый",
+  "Advisory": "Уведомление",
+  "Watch": "Наблюдение",
+  "Warning": "Тревога",
+  "Smithsonian GVP": "GVP Смитсоновского института",
+  "USGS": "USGS",
+  "Eruption ongoing · VEI {vei}": "Извержение продолжается · VEI {vei}",
+  "Eruption ongoing": "Извержение продолжается",
+  "Alert level: {level}": "Уровень тревоги: {level}",
+  "Aviation code: {color}": "Авиационный код: {color}",
+  "erupting since {date}": "извергается с {date}",
+  "erupting since {year}": "извергается с {year} г.",
+  "Continuing eruption, no US alert level": "Продолжающееся извержение, уровня тревоги США нет",
+  "Colour is the USGS aviation colour code for US volcanoes at advisory level or above, otherwise purple for an eruption the Smithsonian reports as continuing. A white ring marks a continuing eruption; size follows its explosivity (VEI) or the alert level.": "Цвет — авиационный цветовой код USGS для вулканов США на уровне «уведомление» и выше, иначе фиолетовый — для извержения, которое Смитсоновский институт считает продолжающимся. Белое кольцо отмечает продолжающееся извержение; размер соответствует его взрывному индексу (VEI) или уровню тревоги.",
+  "Volcanoes": "Вулканы"
 }

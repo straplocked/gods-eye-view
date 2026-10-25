@@ -252,6 +252,12 @@ function validateConfig({ name, layerId, subsources }) {
  * @param {number} [options.maxFeatures=10000] - Per-subsource feature cap (excess is dropped and reported as truncated).
  * @param {{windowMs: number, max: number, globalMax: number}} [options.rateLimit] - Per-client limiter.
  * @param {string} [options.errorCode] - 502 body code; default `<layer_id>_unavailable`.
+ * @param {(features: Array<Object>) => Array<Object>} [options.combine] - Joins
+ *   the features of the served subsources into the response features (the
+ *   Volcanoes layer merges one volcano reported by two feeds into a single
+ *   feature). It receives the stamped, prefixed features, must not change
+ *   them, and returns features with unique string ids and the layer contract;
+ *   the result is validated again and a failure answers the sanitized 502.
  * @param {Function} [options.fetchImpl]
  * @param {() => number} [options.now]
  * @returns {{name: string, configureServer: Function, configurePreviewServer: Function}}
@@ -267,11 +273,14 @@ export function createKeylessFeedProxy({
   maxFeatures = 10_000,
   rateLimit = { windowMs: 60_000, max: 60, globalMax: 1200 },
   errorCode = `${String(layerId).replaceAll('-', '_')}_unavailable`,
+  combine = null,
   fetchImpl = (...args) => globalThis.fetch(...args),
   now = () => Date.now(),
   userAgent = KEYLESS_FEED_USER_AGENT,
 } = {}) {
   validateConfig({ name, layerId, subsources });
+  if (combine !== null && typeof combine !== 'function')
+    throw new TypeError('Keyless feed combine must be a function');
   const route = keylessLayerRoute(layerId);
   const allow = makeRateLimiter(rateLimit);
   /** @type {Map<string, {value: ?Object, savedAt: number, failedAt: ?number, error: ?string}>} */
@@ -380,6 +389,21 @@ export function createKeylessFeedProxy({
     }
   }
 
+  /** Apply the layer's `combine` step and hold its output to the contract. */
+  function combineFeatures(features) {
+    if (!combine) return features;
+    const combined = combine(features);
+    const { ok, errors } = validateKeylessLayerCollection(
+      { type: 'FeatureCollection', features: combined },
+      { layerId },
+    );
+    if (!ok) {
+      console.warn(`[keyless:${layerId}] combined feed rejected: ${errors[0]}`);
+      throw invalidPayload('combined collection failed validation');
+    }
+    return combined;
+  }
+
   function statusBody() {
     return {
       layer: layerId,
@@ -420,9 +444,12 @@ export function createKeylessFeedProxy({
       const served = results.filter((result) => result.value);
       if (!served.length) return send(502, { error: errorCode });
       const stale = served.some((result) => result.stale);
+      const features = combineFeatures(
+        served.flatMap((result) => result.value.features),
+      );
       const body = {
         type: 'FeatureCollection',
-        features: served.flatMap((result) => result.value.features),
+        features,
         metadata: {
           layer: layerId,
           fetchedAt: iso(

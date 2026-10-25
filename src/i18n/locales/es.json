@@ -2995,5 +2995,21 @@
   "Weather alert": "Alerta meteorológica",
   "Areas are US National Weather Service alerts colored by severity; dots are NOAA tsunami bulletins colored by level. Alerts whose zone boundaries are still loading appear on a later refresh. Not for life-safety decisions.": "Las áreas son alertas del Servicio Meteorológico Nacional de EE. UU. coloreadas por gravedad; los puntos son boletines de tsunami de NOAA coloreados por nivel. Las alertas cuyos límites de zona aún se están cargando aparecen en una actualización posterior. No sirve para decisiones de seguridad vital.",
   "Weather & Tsunami Warnings": "Alertas meteorológicas y de tsunami",
-  "NWS": "NWS"
+  "NWS": "NWS",
+  "Yellow": "Amarillo",
+  "Orange": "Naranja",
+  "Advisory": "Aviso",
+  "Watch": "Vigilancia",
+  "Warning": "Alerta",
+  "Smithsonian GVP": "GVP del Smithsonian",
+  "USGS": "USGS",
+  "Eruption ongoing · VEI {vei}": "Erupción en curso · VEI {vei}",
+  "Eruption ongoing": "Erupción en curso",
+  "Alert level: {level}": "Nivel de alerta: {level}",
+  "Aviation code: {color}": "Código de aviación: {color}",
+  "erupting since {date}": "en erupción desde {date}",
+  "erupting since {year}": "en erupción desde {year}",
+  "Continuing eruption, no US alert level": "Erupción continua, sin nivel de alerta de EE. UU.",
+  "Colour is the USGS aviation colour code for US volcanoes at advisory level or above, otherwise purple for an eruption the Smithsonian reports as continuing. A white ring marks a continuing eruption; size follows its explosivity (VEI) or the alert level.": "El color es el código de color de aviación del USGS para los volcanes de EE. UU. en nivel de aviso o superior; el morado indica una erupción que el Smithsonian da por continua. Un anillo blanco marca una erupción continua; el tamaño sigue su explosividad (VEI) o el nivel de alerta.",
+  "Volcanoes": "Volcanes"
 }

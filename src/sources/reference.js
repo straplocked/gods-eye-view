@@ -5,6 +5,7 @@ import { createBundledCableSource } from '../layers/submarineCables/bundledSourc
 import { createAdsbGnssSource } from '../layers/gnss/source.js';
 import { createGlobalHazardsSource } from '../layers/globalHazards/source.js';
 import { createWeatherWarningsSource } from '../layers/weatherWarnings/source.js';
+import { createVolcanoesSource } from '../layers/volcanoes/source.js';
 
 /** Construct the existing reference feeds independently of application setup. */
 export function createReferenceSources() {
@@ -16,5 +17,6 @@ export function createReferenceSources() {
     'gnss-integrity': createAdsbGnssSource(),
     'global-hazards': createGlobalHazardsSource(),
     'weather-warnings': createWeatherWarningsSource(),
+    volcanoes: createVolcanoesSource(),
   };
 }

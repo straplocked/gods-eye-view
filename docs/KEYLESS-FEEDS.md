@@ -77,6 +77,18 @@ The kit then:
    that fails is rejected like a corrupt payload;
 3. caches it per subsource for its TTL, with single-flight refresh.
 
+A layer whose subsources describe the same things can pass `combine(features)`
+to `createKeylessFeedProxy()`. It runs on every response over the stamped,
+prefixed features of the subsources that are being served (fresh or stale),
+must not change its input, and returns the features to send; its output is held
+to the same layer contract again, and a failure (or a throw) answers the
+sanitized 502. `metadata.sources[]` still reports each subsource's own count.
+Volcanoes uses it to join a volcano reported by both feeds into one feature
+(`properties.source: 'gvp+usgs'`); the client treats a `+`-joined source as
+belonging to each feed (chip counts, and a chip hides a feature only when every
+feed behind it is off). A request can also replace the kit's User-Agent for one
+upstream with `fetchJson(url, {headers: {'User-Agent': …}})`.
+
 Conventions enforced for every route: non-GET → 405 (`Allow: GET`); the client
 query string is ignored (upstream URLs are fixed); per-client limiter → 429 with
 `Retry-After: 60`; `Cache-Control: no-store`; `X-Data-Stale: true` when any
@@ -229,8 +241,10 @@ Read the Global Hazards files as the worked example.
     decision (voice-off in `VOICE_OFF_LAYERS`, `noQuery`, trimming elsewhere,
     or a deliberate new budget), not a silent raise. Weather & Tsunami Warnings
     chose a toggle-only entry (`noQuery`, two aliases), which fits under the
-    existing ceiling with seven characters to spare (52,193 of 52,200), so the next layer is in
-    the same position.
+    existing ceiling with seven characters to spare (52,193 of 52,200).
+    Volcanoes needed 24 even as a toggle with no alias (52,217), and took the
+    "deliberate new budget" route: the ceiling is now 52,250, 33 spare, so the
+    next layer is in the same position.
 11. **Tests**: `records.test.mjs` on hand-written fixtures (valid output via
     `assertValidFeatureCollection`), a proxy test (both hooks, TTL, stale on
     error, byte cap, sanitized 502, no cached empty snapshot, single flight,
@@ -246,6 +260,7 @@ Read the Global Hazards files as the worked example.
 | ------------------ | -------------------------- | ---------------------------------- | --------------------------------- | ---------------------------------- |
 | `global-hazards`   | Global Hazards             | `gdacs` (15 min), `eonet` (30 min) | `/api/v1/layers/global-hazards`   | First layer on the kit             |
 | `weather-warnings` | Weather & Tsunami Warnings | `nws` (2 min), `tsunami` (5 min)   | `/api/v1/layers/weather-warnings` | NWS zone cache fills progressively |
+| `volcanoes`        | Volcanoes                  | `gvp` (6 h), `usgs` (10 min)       | `/api/v1/layers/volcanoes`        | Joins a volcano in both feeds      |
 
 ### Global Hazards (`global-hazards`, token `5`)
 
@@ -342,3 +357,63 @@ Read the Global Hazards files as the worked example.
   One failing tsunami center fails the whole `tsunami` subsource (the last good
   snapshot is served flagged stale) rather than hiding a center. The layer is
   informational and not for life-safety decisions. Voice: toggle only.
+
+### Volcanoes (`volcanoes`, token `7`)
+
+- **Smithsonian GVP** — the "Volcanoes of the World" WFS,
+  `https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=2.0.0&request=GetFeature&typeName=GVP-VOTW:E3WebApp_Eruptions1960&outputFormat=application/json&CQL_FILTER=ContinuingEruption=%27True%27`
+  (38 records in a live sample). A record not flagged `ContinuingEruption:
+'True'` is skipped even though the request filters for it, so a server that
+  ignores the filter cannot turn the layer into every eruption since 1960. One
+  feature per `VolcanoNumber`: with several open records the latest start wins
+  (then the higher `Activity_ID`). The start comes from `StartDateYear/Month/
+Day` (or the `YYYYMMDD` string, zeroes meaning unknown); `eruptionStart` is an
+  ISO time only for a complete real date, otherwise null with
+  `eruptionStartYear` kept (Yasur: only 1270). `EndDate` is not used: for
+  continuing eruptions it is a review date, not an end. Properties:
+  `name`, `vnum`, `eruption: true`, `vei` (0-8 or null), `eruptionStart`,
+  `eruptionStartYear`, `url` (`https://volcano.si.edu/volcano.cfm?vn=<vnum>`).
+  The volcano.si.edu RSS reports and site pages answer with a bot-verification
+  page and are not used; only the WFS (which does not) is. TTL 6 h.
+- **USGS Volcano Hazards Program** —
+  `https://volcanoes.usgs.gov/vsc/api/volcanoApi/vhpstatus`, a JSON array of
+  every US volcano (161 in a live sample) under `Content-Type: text/html`.
+  Only volcanoes whose `alertLevel` is not `NORMAL` or `UNASSIGNED` are kept
+  (`includeNormal` in the normalizer exists for a future toggle; the route never
+  uses it). Properties: `name`, `vnum`, `alertLevel` (ADVISORY, WATCH,
+  WARNING), `colorCode` (YELLOW, ORANGE, RED; GREEN only with `includeNormal`),
+  `observatory` (the `obs` code upper-cased: AVO, HVO, CVO, YVO, CALVO, NMI),
+  `region`, `synopsis` (the "AVO Great Sitkin ORANGE/WATCH - " prefix that
+  repeats level and color is removed), `alertDate` and `timestamp` (the notice
+  time from `noticeId`, else `alertDate`; `alertDate` has no zone and is read
+  as UTC), `url` (https only, usgs.gov, alaska.edu or volcano.si.edu hosts). A
+  volcano with no volcano number is identified as `cd-<volcanoCd>`. An empty
+  list is treated as a broken feed. TTL 10 min. The service answers **404 to
+  the kit's default User-Agent** (`GodsEyeView/fork (+https://…)`, any
+  User-Agent carrying a URL) and 200 to the same product token alone, so this
+  one request sends `GodsEyeView/fork`.
+- **Merge** — `mergeVolcanoFeatures()` in `src/layers/volcanoes/records.js`
+  (the kit's `combine`). Key = volcano number. A volcano in both feeds is one
+  feature, `source: 'gvp+usgs'`, with the GVP point, the USGS alert fields and
+  the GVP eruption fields; `timestamp` is the USGS notice time, else the
+  eruption start. The id is `volcano:<key>` for all three cases (gvp, usgs,
+  gvp+usgs), so an open card survives a feed dropping out and returning. The
+  link is the USGS page, else GVP's. Every feature has the full property set
+  (nulls for the feed that is missing): `name`, `vnum`, `eruption`, `vei`,
+  `eruptionStart`, `eruptionStartYear`, `alertLevel`, `colorCode`,
+  `observatory`, `region`, `synopsis`, `alertDate`, `url`, `gvpUrl`, `usgsUrl`,
+  `timestamp`. A NORMAL USGS volcano never reaches the merge, so an erupting
+  volcano that USGS rates NORMAL shows as GVP-only (purple).
+- **Display** — fill is the USGS aviation color code (green, yellow, orange,
+  red) when present, else purple for a GVP-only eruption; a white ring marks a
+  continuing eruption, the size follows the VEI (9-16 px) or the alert level
+  (advisory 10, watch 13, warning 16). Card: eruption and VEI, alert level and
+  aviation code, observatory and region, synopsis, eruption start, notice age,
+  source link. Legend: aviation codes from red to green, then eruptions with no
+  code. Chips: Smithsonian GVP and USGS.
+- **Caveats** — GVP lists eruptions it considers continuing (some for years or
+  centuries); it does not report a "last activity" time, so a purple dot does
+  not mean activity today. USGS covers US volcanoes only, so most of the world's
+  volcanoes have only the GVP view. Informational, not for life-safety or
+  flight-planning decisions. Voice: toggle only; reaching it needed a deliberate
+  +50 characters on the voice prompt ceiling (now 52,250).
