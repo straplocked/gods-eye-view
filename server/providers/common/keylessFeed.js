@@ -97,7 +97,7 @@ export function createUpstreamClient({
     });
   }
 
-  async function open(url, { emptyStatuses = [], headers } = {}) {
+  async function openOnce(url, { emptyStatuses = [], headers } = {}) {
     const response = await request(url, headers ? { headers } : {});
     if (emptyStatuses.includes(response.status)) {
       await response.body?.cancel().catch(() => {});
@@ -114,8 +114,28 @@ export function createUpstreamClient({
   }
 
   /**
+   * openOnce() asked again up to `retries` times (default 0) while the
+   * upstream answers a non-2xx status; NWPS and Safecast answer 502/504
+   * under load. Timeouts, aborts and body errors are never retried.
+   */
+  async function open(url, options = {}) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await openOnce(url, options);
+      } catch (error) {
+        if (
+          error?.code !== 'upstream_status' ||
+          attempt >= (options.retries ?? 0)
+        )
+          throw error;
+      }
+    }
+  }
+
+  /**
    * GET and parse JSON under a byte cap. A status in `emptyStatuses` (an
    * upstream that answers "nothing current" with 204/404) returns null.
+   * Every helper also takes `headers`, `maxBytes` and `retries` (see open()).
    */
   async function fetchJson(url, options = {}) {
     const response = await open(url, options);
@@ -178,6 +198,38 @@ export function createUpstreamClient({
   }
 
   return { fetch: request, fetchJson, fetchText, fetchBytes };
+}
+
+/**
+ * Run `task` over `items` with at most `limit` in flight, results in item
+ * order. The first rejection rejects the whole call and stops further items
+ * from starting, so a subsource that needs every item fails as one; a task
+ * that may skip an item catches its own errors.
+ * @template T, R
+ * @param {T[]} items
+ * @param {number} limit
+ * @param {(item: T, index: number) => Promise<R>} task
+ * @returns {Promise<R[]>}
+ */
+export async function mapLimited(items, limit, task) {
+  const results = new Array(items.length);
+  let next = 0;
+  let failed = false;
+  const worker = async () => {
+    while (!failed && next < items.length) {
+      const index = next++;
+      try {
+        results[index] = await task(items[index], index);
+      } catch (error) {
+        failed = true;
+        throw error;
+      }
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, worker),
+  );
+  return results;
 }
 
 const RESERVED_SOURCE_KEYS = new Set([

@@ -96,7 +96,7 @@ export function nwsAlert({
       certainty: 'Likely',
       urgency: 'Expected',
       event,
-      sender: 'w-nws.webmaster@noaa.gov',
+      sender: 'sender@example.invalid',
       senderName,
       headline: `${event} issued October 25 at 3:45AM EDT by ${senderName}`,
       description: 'Long free text that the layer never carries.',
@@ -122,7 +122,7 @@ export const tsunamiPaaq = `<?xml version="1.0" encoding="UTF-8"?>
     <author>
       <name>NWS National Tsunami Warning Center Palmer AK</name>
 <uri>https://www.tsunami.gov/</uri>
-     <email>ntwc@noaa.gov</email>
+     <email>center@example.invalid</email>
     </author>
 <link type="application/atom+xml" rel="self" title="self" href="https://www.tsunami.gov/events/xml/PAAQAtom.xml"/>
 <link rel="related" title="Energy Map" href="https://www.tsunami.gov/events/PAAQ/2026/10/25/tnfxzn/1/WEAK53/energytnfxzn.jpg" type="image/jpeg" />

@@ -14,6 +14,7 @@
  * @module layers/aviationWeather/records
  */
 import { isValidGeometry, toIsoTimestamp } from '../common/geojson.js';
+import { invalidPayload, toNumber } from '../common/normalize.js';
 
 export const AVIATION_WEATHER_LAYER_ID = 'aviation-weather';
 
@@ -42,21 +43,8 @@ const MAX_WX = 60;
 const STATION_ID = /^[A-Z0-9]{2,6}$/;
 const CEILING_COVERS = new Set(['BKN', 'OVC', 'OVX', 'VV']);
 
-/** Error for a corrupt or non-collection payload; never cached (keylessFeed). */
-function invalidPayload(detail) {
-  return Object.assign(new Error(detail), { code: 'invalid_payload' });
-}
-
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
-
-/** A finite number from a number or numeric string, else null ('' is null). */
-function toNumber(value) {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (typeof value !== 'string' || !value.trim()) return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
-}
 
 const inRange = (value, min, max) =>
   value !== null && value >= min && value <= max ? value : null;

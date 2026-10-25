@@ -6,7 +6,7 @@ import {
   normalizeGauges,
   nwpsTileUrl,
 } from '../../src/layers/waterObservations/records.js';
-import { createKeylessFeedProxy } from './common/keylessFeed.js';
+import { createKeylessFeedProxy, mapLimited } from './common/keylessFeed.js';
 
 const MIB = 1024 * 1024;
 /** Tiles requested at once: NWPS answers a tile in 3 to 15 s, and is not quick. */
@@ -19,31 +19,6 @@ async function fetchBuoys({ fetchText, now }) {
 }
 
 /**
- * Run `task` over `items` with at most `limit` in flight, results in item
- * order. The first failure rejects and stops further items from starting.
- */
-async function mapLimited(items, limit, task) {
-  const results = new Array(items.length);
-  let next = 0;
-  let failed = false;
-  const worker = async () => {
-    while (!failed && next < items.length) {
-      const index = next++;
-      try {
-        results[index] = await task(items[index]);
-      } catch (error) {
-        failed = true;
-        throw error;
-      }
-    }
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(limit, items.length) }, worker),
-  );
-  return results;
-}
-
-/**
  * NWPS gauge list, one bounding-box tile at a time (the unfiltered list is
  * 13 MB and takes 40 s or more; a tile takes a few seconds). A tile that fails
  * with an upstream HTTP status (the service answers 504 under load) is asked
@@ -52,15 +27,8 @@ async function mapLimited(items, limit, task) {
  * snapshot keeps being served as stale instead.
  */
 async function fetchRivers({ fetchJson }) {
-  const tile = async (box) => {
-    const url = nwpsTileUrl(box);
-    try {
-      return await fetchJson(url, { maxBytes: 8 * MIB });
-    } catch (error) {
-      if (error?.code !== 'upstream_status') throw error;
-      return fetchJson(url, { maxBytes: 8 * MIB });
-    }
-  };
+  const tile = (box) =>
+    fetchJson(nwpsTileUrl(box), { maxBytes: 8 * MIB, retries: 1 });
   return normalizeGauges(await mapLimited(NWPS_TILES, TILE_CONCURRENCY, tile));
 }
 

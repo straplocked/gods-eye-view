@@ -16,6 +16,7 @@ import {
 import {
   KeylessFeedError,
   createKeylessFeedProxy,
+  mapLimited,
 } from './common/keylessFeed.js';
 
 const KIB = 1024;
@@ -29,17 +30,6 @@ const DETAIL_MAX_AGE_MS = 6 * 3_600_000;
 /** A resolved airport position is kept for a week, an unknown identifier for a day. */
 const AIRPORT_TTL_MS = 7 * 24 * 3_600_000;
 const AIRPORT_MISS_TTL_MS = 24 * 3_600_000;
-
-/** Run `task` over `items` with at most `limit` in flight. */
-async function mapLimit(items, limit, task) {
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) await task(items[next++]);
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(limit, items.length) }, worker),
-  );
-}
 
 /**
  * Keyless FAA route at /api/v1/layers/airspace: Temporary Flight Restrictions
@@ -77,7 +67,7 @@ export function airspaceProxy({
         nowMs - cached.fetchedAt > DETAIL_MAX_AGE_MS
       );
     });
-    await mapLimit(todo, DETAIL_CONCURRENCY, async (entry) => {
+    await mapLimited(todo, DETAIL_CONCURRENCY, async (entry) => {
       try {
         const xml = await fetchText(tfrDetailUrl(entry.notamId), {
           maxBytes: 512 * KIB,

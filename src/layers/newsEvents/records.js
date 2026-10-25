@@ -17,6 +17,8 @@
  * @module layers/newsEvents/records
  */
 
+import { invalidPayload } from '../common/normalize.js';
+
 /** Layer id and route suffix. */
 export const NEWS_EVENTS_LAYER_ID = 'news-events';
 
@@ -100,10 +102,6 @@ const THEME_LABELS = Object.freeze({
 const THEME_CODE = /^[A-Z][A-Z0-9_]{0,79}$/;
 const NUMBER_TEXT = /^-?\d+(?:\.\d+)?$/;
 const FEATURE_ID = /^[A-Za-z0-9_.-]{1,24}$/;
-
-/** Marks a corrupt payload with the code the keyless kit maps to `invalid_payload`. */
-const invalidPayload = (detail) =>
-  Object.assign(new Error(detail), { code: 'invalid_payload' });
 
 const isConflictTheme = (theme) =>
   CONFLICT_THEMES.has(theme) ||

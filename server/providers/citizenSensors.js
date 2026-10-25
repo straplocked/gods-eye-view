@@ -40,14 +40,7 @@ async function fetchAirPm({ fetchJson, now }) {
 async function fetchRadiation({ fetchJson, now }) {
   const nowMs = now();
   const rows = [];
-  const page = async (url) => {
-    try {
-      return await fetchJson(url, { maxBytes: 2 * MIB });
-    } catch (error) {
-      if (error?.code !== 'upstream_status') throw error;
-      return fetchJson(url, { maxBytes: 2 * MIB });
-    }
-  };
+  const page = (url) => fetchJson(url, { maxBytes: 2 * MIB, retries: 1 });
   for (let slice = 0; slice < SAFECAST_SLICES; slice++) {
     const before = nowMs - slice * SAFECAST_SLICE_MS;
     const after = before - SAFECAST_SLICE_MS;

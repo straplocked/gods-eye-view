@@ -177,6 +177,8 @@ Publishing it wider is the [Sharing an instance](#-sharing-an-instance) opt-in, 
 
 To run a prebuilt image on a home server (Unraid and Nginx Proxy Manager) instead of this source-mounted dev image, see [docs/DEPLOY-UNRAID.md](docs/DEPLOY-UNRAID.md).
 
+What this fork adds to upstream (the keyless live layers and the production image) and how to sync it with upstream is in [docs/FORK.md](docs/FORK.md).
+
 When you widen the publish, also set `GEV_KEY_SETUP_TRUSTED_PEERS=none` so the launcher trusts no gateway address.
 
 ```bash

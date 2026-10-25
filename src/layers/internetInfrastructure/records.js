@@ -18,6 +18,7 @@
  */
 import { isValidGeometry } from '../common/geojson.js';
 import { countryCentroid } from './countryCentroids.js';
+import { invalidPayload } from '../common/normalize.js';
 
 export const INTERNET_INFRASTRUCTURE_LAYER_ID = 'internet-infrastructure';
 
@@ -53,11 +54,6 @@ const MAX_URL = 300;
 const COUNTRY_CODE = /^[A-Z]{2}$/;
 const DATASOURCE = /^[a-z][a-z0-9-]{1,23}$/;
 const ALERT_LEVELS = new Set(['critical', 'warning', 'normal']);
-
-/** Error for a corrupt or non-collection payload; never cached (keylessFeed). */
-function invalidPayload(detail) {
-  return Object.assign(new Error(detail), { code: 'invalid_payload' });
-}
 
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);

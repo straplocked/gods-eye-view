@@ -17,6 +17,7 @@
  * @module layers/waterObservations/records
  */
 import { isValidGeometry, toIsoTimestamp } from '../common/geojson.js';
+import { invalidPayload, toNumber } from '../common/normalize.js';
 
 export const WATER_OBSERVATIONS_LAYER_ID = 'water-observations';
 
@@ -82,21 +83,8 @@ const MAX_NAME = 120;
 /** NWPS publishes year 1 for "no time". */
 const EARLIEST_VALID_MS = Date.UTC(2000, 0, 1);
 
-/** Error for a corrupt or non-collection payload; never cached (keylessFeed). */
-function invalidPayload(detail) {
-  return Object.assign(new Error(detail), { code: 'invalid_payload' });
-}
-
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
-
-/** A finite number from a number or numeric string, else null. */
-function toNumber(value) {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (typeof value !== 'string' || !value.trim()) return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
-}
 
 const inRange = (value, min, max) =>
   value !== null && value >= min && value <= max ? value : null;
