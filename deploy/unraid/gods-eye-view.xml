@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>gods-eye-view</Name>
+  <Repository>ghcr.io/straplocked/gods-eye-view:latest</Repository>
+  <Registry>https://github.com/straplocked/gods-eye-view/pkgs/container/gods-eye-view</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/straplocked/gods-eye-view/issues</Support>
+  <Project>https://github.com/straplocked/gods-eye-view</Project>
+  <Overview>God's Eye View - a real-time 3D globe with live aircraft, ships, satellites, earthquakes, hazards, weather and more. Most layers use free feeds that need no key. Optional provider keys go in the .env file in the appdata folder, never in this template. Put it behind a reverse proxy with authentication: anyone who can reach the port can use whatever keys you configure. See docs/DEPLOY-UNRAID.md.</Overview>
+  <Category>Tools: Network:Web</Category>
+  <WebUI>http://[IP]:[PORT:4173]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/straplocked/gods-eye-view/main/deploy/unraid/gods-eye-view.xml</TemplateURL>
+  <ExtraParams>--user 99:100 --cap-drop=ALL --security-opt no-new-privileges:true</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <Config Name="WebUI port" Target="4173" Default="3650" Mode="tcp" Description="Host port that serves the app. Point the reverse proxy at this port; do not forward it from your router." Type="Port" Display="always" Required="true" Mask="false">3650</Config>
+  <Config Name="Appdata" Target="/data" Default="/mnt/user/appdata/gods-eye-view" Mode="rw" Description="Holds the .env with optional provider keys, plus caches and logs. The container runs as 99:100 (nobody:users), so this folder must be owned by it." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/gods-eye-view</Config>
+  <Config Name="Allowed hosts" Target="GEV_ALLOWED_HOSTS" Default="godseye.pluginsynthesis.com" Mode="" Description="Comma-separated hostnames the app answers to, besides localhost and IP addresses. Set to the name your reverse proxy serves. Wildcards are ignored." Type="Variable" Display="always" Required="false" Mask="false">godseye.pluginsynthesis.com</Config>
+</Container>

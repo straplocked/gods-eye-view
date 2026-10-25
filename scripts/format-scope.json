@@ -1158,5 +1158,7 @@
   "src/layers/newsEvents/cards.test.mjs",
   "src/layers/newsEvents/ownership.test.mjs",
   "src/testSupport/newsEventsFixtures.mjs",
-  "src/testSupport/zip.mjs"
+  "src/testSupport/zip.mjs",
+  "scripts/docker-prod-start.mjs",
+  "src/dockerProdLauncher.test.mjs"
 ]
