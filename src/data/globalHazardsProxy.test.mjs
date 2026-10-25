@@ -169,17 +169,50 @@ test('corrupt GDACS while EONET is fine: 200 with EONET, gdacs ok:false, nothing
   assert.equal(ids(recovered, 'gdacs').length, 6);
 });
 
-test('one failing GDACS type fails the GDACS subsource rather than serving a partial list', async () => {
+test('one failing GDACS type serves the other five and names the missing type', async () => {
+  let clock = 0;
+  let tcDown = true;
   const { fetchImpl } = upstream({
     gdacs: (type) =>
-      type === 'TC'
+      type === 'TC' && tcDown
         ? new Response('busy', { status: 503 })
         : Response.json(GDACS_BY_TYPE[type]),
   });
-  const res = await install({ fetchImpl })();
+  const request = install({ fetchImpl, now: () => clock });
+  const res = await request();
   assert.equal(res.status, 200);
-  assert.equal(sourceMeta(res, 'gdacs').error, 'upstream_status');
+  assertValidKeylessLayerCollection(res.body, 'global-hazards');
+  assert.equal(sourceMeta(res, 'gdacs').ok, true);
+  assert.equal(sourceMeta(res, 'gdacs').missingTypes, 'TC');
+  assert.equal(ids(res, 'gdacs').length, 5);
   assert.equal(ids(res, 'eonet').length, 4);
+  // TC recovers, then fails again: its last good list fills the gap.
+  tcDown = false;
+  clock = 15 * 60_000;
+  const recovered = await request();
+  assert.equal(ids(recovered, 'gdacs').length, 6);
+  assert.equal(sourceMeta(recovered, 'gdacs').missingTypes, undefined);
+  tcDown = true;
+  clock = 30 * 60_000;
+  const held = await request();
+  assert.equal(ids(held, 'gdacs').length, 6);
+  assert.equal(sourceMeta(held, 'gdacs').missingTypes, 'TC(cached)');
+});
+
+test('a hanging GDACS type misses its deadline without holding back the rest', async () => {
+  const { fetchImpl } = upstream({
+    gdacs: (type) =>
+      type === 'DR'
+        ? new Promise(() => {})
+        : Response.json(GDACS_BY_TYPE[type]),
+  });
+  const started = performance.now();
+  const res = await install({ fetchImpl, gdacsTypeDeadlineMs: 40 })();
+  assert.ok(performance.now() - started < 2_000);
+  assert.equal(res.status, 200);
+  assert.equal(sourceMeta(res, 'gdacs').ok, true);
+  assert.equal(sourceMeta(res, 'gdacs').missingTypes, 'DR');
+  assert.equal(ids(res, 'gdacs').length, 5);
 });
 
 test('GDACS refreshes after 15 minutes and EONET after 30', async () => {

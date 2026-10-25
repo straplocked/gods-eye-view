@@ -340,9 +340,13 @@ Read the Global Hazards files as the worked example.
   `episodeid`, `alertlevel` (`green`/`orange`/`red`), `name`, `country`,
   `fromdate`, `todate` (zone-less upstream times read as UTC), `severity`
   (GDACS severity text), `url` (the `www.gdacs.org` report page, https only),
-  `timestamp` (= `todate`, the latest episode). One failing type fails the
-  GDACS subsource (the last good snapshot is served stale) rather than serving
-  a list silently missing a hazard type; every type empty is treated as a
+  `timestamp` (= `todate`, the latest episode). Each type is read and
+  validated on its own with a 25 s deadline (`GDACS_TYPE_DEADLINE_MS`; the
+  drought list has been seen hanging for 90 s+ while the other five answered in
+  under 15 s). A type that fails or misses the deadline is filled from its last
+  good list, or left out, and named either way in `metadata.sources[].missingTypes`
+  (`DR`, or `DR(cached)`), so a missing hazard type is never silent and one slow
+  list cannot blank the other five. Only all six failing fails the subsource; every type empty is treated as a
   broken feed. Droughts' MAP list is about 3 MB because of its area polygons,
   under the 12 MB per-type cap; the six parallel reads took about 20 s in
   testing, so the GDACS refresh timeout is 60 s.
