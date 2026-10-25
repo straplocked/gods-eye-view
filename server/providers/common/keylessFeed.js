@@ -57,6 +57,30 @@ export class KeylessFeedError extends Error {
   }
 }
 
+/** Longest upstream-requested wait honoured before asking again (6 h). */
+export const MAX_RETRY_AFTER_MS = 6 * 60 * 60 * 1000;
+
+/**
+ * Parse a Retry-After header (delta-seconds or an HTTP date) into a wait in
+ * milliseconds, capped at MAX_RETRY_AFTER_MS. Returns null when absent or
+ * unreadable, so callers fall back to their own backoff.
+ * @param {?string} value
+ * @param {number} nowMs
+ * @returns {?number}
+ */
+export function parseRetryAfterMs(value, nowMs) {
+  const text = String(value ?? '').trim();
+  if (!text) return null;
+  let waitMs;
+  if (/^\d+$/.test(text)) waitMs = Number(text) * 1000;
+  else {
+    const at = Date.parse(text);
+    if (!Number.isFinite(at)) return null;
+    waitMs = at - nowMs;
+  }
+  return Math.min(Math.max(waitMs, 0), MAX_RETRY_AFTER_MS);
+}
+
 /** Throw from a normalizer when a payload is corrupt or not a collection. */
 export function invalidPayload(detail = 'invalid_payload') {
   return new KeylessFeedError('invalid_payload', detail);
@@ -78,13 +102,14 @@ export function keylessErrorCode(error) {
  * Upstream helpers bound to one refresh: every request carries the kit's
  * User-Agent, the refresh's timeout signal and `redirect: 'error'`, and every
  * body read is byte-capped.
- * @param {{fetchImpl: Function, signal: AbortSignal, maxBytes: number, userAgent?: string}} options
+ * @param {{fetchImpl: Function, signal: AbortSignal, maxBytes: number, userAgent?: string, now?: () => number}} options
  */
 export function createUpstreamClient({
   fetchImpl,
   signal,
   maxBytes,
   userAgent = KEYLESS_FEED_USER_AGENT,
+  now = () => Date.now(),
 }) {
   /** fetch() with the kit's headers, signal and redirect policy. */
   async function request(url, init = {}) {
@@ -105,10 +130,18 @@ export function createUpstreamClient({
     }
     if (!response.ok) {
       await response.body?.cancel().catch(() => {});
-      throw new KeylessFeedError(
+      const error = new KeylessFeedError(
         'upstream_status',
         `upstream HTTP ${response.status}`,
       );
+      if (response.status === 429 || response.status === 503) {
+        const retryAfterMs = parseRetryAfterMs(
+          response.headers?.get?.('retry-after'),
+          now(),
+        );
+        if (retryAfterMs != null) error.retryAfterMs = retryAfterMs;
+      }
+      throw error;
     }
     return response;
   }
@@ -123,8 +156,11 @@ export function createUpstreamClient({
       try {
         return await openOnce(url, options);
       } catch (error) {
+        // An upstream that named a wait (429/503 + Retry-After) is not asked
+        // again here; the subsource backoff honours the wait instead.
         if (
           error?.code !== 'upstream_status' ||
+          error.retryAfterMs != null ||
           attempt >= (options.retries ?? 0)
         )
           throw error;
@@ -362,6 +398,7 @@ export function createKeylessFeedProxy({
       signal,
       maxBytes: subsource.maxBytes ?? maxBytes,
       userAgent,
+      now,
     });
     const collection = await subsource.fetchSnapshot({
       fetchImpl: client.fetch,
@@ -412,7 +449,11 @@ export function createKeylessFeedProxy({
     const ttl = subsource.ttlMs ?? ttlMs;
     if (entry?.value && now() - entry.savedAt < ttl)
       return { value: entry.value, ok: true, stale: false };
-    if (entry?.failedAt != null && now() - entry.failedAt < failureBackoffMs)
+    if (
+      entry?.failedAt != null &&
+      now() - entry.failedAt <
+        Math.max(failureBackoffMs, entry.retryAfterMs ?? 0)
+    )
       return {
         value: entry.value,
         ok: false,
@@ -439,6 +480,7 @@ export function createKeylessFeedProxy({
               value: previous?.value ?? null,
               savedAt: previous?.savedAt ?? 0,
               failedAt: now(),
+              retryAfterMs: error?.retryAfterMs ?? null,
               error: keylessErrorCode(error),
             });
             throw error;

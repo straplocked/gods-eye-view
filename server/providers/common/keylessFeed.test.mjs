@@ -9,6 +9,7 @@ import {
   keylessErrorCode,
   keylessLayerRoute,
   mapLimited,
+  parseRetryAfterMs,
 } from './keylessFeed.js';
 import { assertValidKeylessLayerCollection } from '../../../src/testSupport/geojson.mjs';
 
@@ -194,6 +195,54 @@ test('a failed subsource is not retried before the backoff elapses', async () =>
   clock = 60_000;
   await request();
   assert.equal(calls, 2);
+});
+
+test('an upstream 429 Retry-After holds the subsource past the default backoff', async () => {
+  let clock = 0;
+  let calls = 0;
+  const request = install({
+    now: () => clock,
+    failureBackoffMs: 60_000,
+    subsources: [
+      {
+        id: 'alpha',
+        fetchSnapshot: async ({ fetchJson }) => {
+          calls++;
+          return fetchJson('https://example.test/feed', { retries: 3 });
+        },
+      },
+    ],
+    fetchImpl: async () =>
+      new Response('throttled', {
+        status: 429,
+        headers: { 'Retry-After': '2582' },
+      }),
+  });
+  assert.equal((await request()).status, 502);
+  assert.equal(calls, 1);
+  clock = 60_000;
+  await request();
+  clock = 2_581_999;
+  await request();
+  assert.equal(calls, 1);
+  clock = 2_582_000;
+  await request();
+  assert.equal(calls, 2);
+});
+
+test('parseRetryAfterMs reads seconds and HTTP dates, and caps the wait', () => {
+  assert.equal(parseRetryAfterMs('120', 0), 120_000);
+  assert.equal(
+    parseRetryAfterMs(
+      'Sun, 25 Oct 2026 14:00:30 GMT',
+      Date.parse('2026-10-25T14:00:00Z'),
+    ),
+    30_000,
+  );
+  assert.equal(parseRetryAfterMs('999999', 0), 6 * 60 * 60 * 1000);
+  assert.equal(parseRetryAfterMs('', 0), null);
+  assert.equal(parseRetryAfterMs('soon', 0), null);
+  assert.equal(parseRetryAfterMs(null, 0), null);
 });
 
 test('the status route reads the cache without fetching', async () => {

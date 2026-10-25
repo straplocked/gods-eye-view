@@ -33,7 +33,7 @@ createKeylessFeedProxy({
   ],
   // Optional, with defaults:
   ttlMs: 900_000, // default per-subsource TTL
-  failureBackoffMs: 60_000, // no retry of a failed subsource before this
+  failureBackoffMs: 60_000, // no retry of a failed subsource before this; an upstream 429/503 Retry-After (capped at 6 h) extends it
   timeoutMs: 30_000, // per-subsource refresh timeout
   maxBytes: 16 * 1024 * 1024, // default cap per upstream body
   maxFeatures: 10_000, // per-subsource cap; excess dropped, `truncated: true`
