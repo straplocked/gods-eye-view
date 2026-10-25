@@ -167,6 +167,18 @@ export const DATA_CREDITS = [
       ' · Incident information: ' +
       '<a href="https://inciweb.wildfire.gov/" target="_blank" rel="noopener">InciWeb</a>',
   },
+  {
+    key: 'gdacs',
+    html:
+      'Global hazards: ' +
+      '<a href="https://www.gdacs.org/" target="_blank" rel="noopener">GDACS</a>, a cooperation framework of the European Commission (JRC) and the United Nations (UN OCHA)',
+  },
+  {
+    key: 'nasa-eonet',
+    html:
+      'Natural events: ' +
+      '<a href="https://eonet.gsfc.nasa.gov/" target="_blank" rel="noopener">NASA Earth Observatory Natural Event Tracker (EONET)</a>',
+  },
   OSM_CREDIT,
   OPENMAPTILES_CREDIT,
   {

@@ -213,6 +213,32 @@ const layers = [
     },
   },
   {
+    id: 'global-hazards',
+    aliases: [
+      'hazards',
+      'disasters',
+      'global hazards',
+      'natural hazards',
+      'disaster alerts',
+      'natural events',
+      'gdacs',
+      'eonet',
+    ],
+    context: false,
+    query: {
+      fields: {
+        hazard: ['t'],
+        alertLevel: ['t'],
+        name: ['t'],
+        country: ['t'],
+        timeMs: ['ms'],
+      },
+      timeField: 'timeMs',
+      caveat:
+        'GDACS current alerts and NASA EONET open events (30 days); one point per event; EONET has no alert level',
+    },
+  },
+  {
     id: 'weather-cyclones',
     aliases: ['cyclones', 'hurricanes', 'typhoons', 'tropical storms'],
     context: false,
