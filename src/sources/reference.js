@@ -11,6 +11,7 @@ import { createAviationWeatherSource } from '../layers/aviationWeather/source.js
 import { createAirspaceSource } from '../layers/airspace/source.js';
 import { createWaterObservationsSource } from '../layers/waterObservations/source.js';
 import { createCitizenSensorsSource } from '../layers/citizenSensors/source.js';
+import { createInternetInfrastructureSource } from '../layers/internetInfrastructure/source.js';
 
 /** Construct the existing reference feeds independently of application setup. */
 export function createReferenceSources() {
@@ -28,5 +29,6 @@ export function createReferenceSources() {
     airspace: createAirspaceSource(),
     'water-observations': createWaterObservationsSource(),
     'citizen-sensors': createCitizenSensorsSource(),
+    'internet-infrastructure': createInternetInfrastructureSource(),
   };
 }

@@ -386,6 +386,13 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // characters, same meaning), which leaves the prompt at 52,343 under the
   // unchanged 52,350 ceiling and 7 characters spare: the next keyless layer
   // has to trim again or go voice-off.
+  // Internet Outages & Data Centers is the ninth: its id is 23 characters in
+  // two enums and the toggle costs 52 (52,395) against 7 spare. Decision: trim,
+  // not raise. The move_camera rangeM description lost "from the target " and
+  // "whole-country/whole-city or close-landmark " (59 characters, same
+  // meaning: automatic framing), which leaves the prompt at 52,336 under the
+  // unchanged 52,350 ceiling and 14 characters spare. Another layer with a
+  // long id would not fit: it has to trim again or go voice-off.
   const size = instructions.length + JSON.stringify(GEV_REALTIME_TOOLS).length;
   assert.ok(size <= 52350, `prompt size ${size}`);
 });

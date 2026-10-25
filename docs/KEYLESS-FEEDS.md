@@ -271,6 +271,13 @@ Read the Global Hazards files as the worked example.
     next layer should trim the prompt or the manifest rather than raise it again.
     Airspace took token `00`, the first two-character token; the next layer gets
     `01`, and the frontier values in the token tests move to `01`/`02`.
+    Internet Outages & Data Centers took token `03` and is a toggle with no alias.
+    Its 23-character id sits in two enums, so the toggle cost 52 characters
+    (52,395 against 7 spare). It took the "trim" route: the `rangeM` description
+    of `fly_to_location` lost 59 characters of examples ("from the target ",
+    "whole-country/whole-city or close-landmark ") without changing what it asks
+    for, which leaves 52,336 under the unchanged 52,350 ceiling and 14 spare.
+    The next layer with a long id will have to trim again or go voice-off.
 11. **Tests**: `records.test.mjs` on hand-written fixtures (valid output via
     `assertValidFeatureCollection`), a proxy test (both hooks, TTL, stale on
     error, byte cap, sanitized 502, no cached empty snapshot, single flight,
@@ -282,16 +289,17 @@ Read the Global Hazards files as the worked example.
 
 ## Keyless layers
 
-| Layer id             | Name                                   | Subsources (TTL)                          | Route                               | Notes                                             |
-| -------------------- | -------------------------------------- | ----------------------------------------- | ----------------------------------- | ------------------------------------------------- |
-| `global-hazards`     | Global Hazards                         | `gdacs` (15 min), `eonet` (30 min)        | `/api/v1/layers/global-hazards`     | First layer on the kit                            |
-| `weather-warnings`   | Weather & Tsunami Warnings             | `nws` (2 min), `tsunami` (5 min)          | `/api/v1/layers/weather-warnings`   | NWS zone cache fills progressively                |
-| `volcanoes`          | Volcanoes                              | `gvp` (6 h), `usgs` (10 min)              | `/api/v1/layers/volcanoes`          | Joins a volcano in both feeds                     |
-| `space-weather`      | Aurora & Space Weather                 | `aurora` (5 min), `kp` (15 min)           | `/api/v1/layers/space-weather`      | Kp rides in metadata, no features                 |
-| `aviation-weather`   | Aviation Weather                       | `metar`, `sigmet`, `isigmet` (5 min each) | `/api/v1/layers/aviation-weather`   | About 5,100 METAR points, 2 MB                    |
-| `airspace`           | Airspace Restrictions & Airport Delays | `tfr` (10 min), `delays` (5 min)          | `/api/v1/layers/airspace`           | One XNOTAM download per TFR, cached               |
-| `water-observations` | Buoys & River Gauges                   | `buoys`, `rivers` (15 min each)           | `/api/v1/layers/water-observations` | NWPS fetched in 8 bbox tiles, 3 at a time         |
-| `citizen-sensors`    | Citizen Air & Radiation Sensors        | `airpm` (10 min), `radiation` (30 min)    | `/api/v1/layers/citizen-sensors`    | PM binned to a 0.1° grid; Safecast in 1 h windows |
+| Layer id                  | Name                                   | Subsources (TTL)                          | Route                                    | Notes                                                          |
+| ------------------------- | -------------------------------------- | ----------------------------------------- | ---------------------------------------- | -------------------------------------------------------------- |
+| `global-hazards`          | Global Hazards                         | `gdacs` (15 min), `eonet` (30 min)        | `/api/v1/layers/global-hazards`          | First layer on the kit                                         |
+| `weather-warnings`        | Weather & Tsunami Warnings             | `nws` (2 min), `tsunami` (5 min)          | `/api/v1/layers/weather-warnings`        | NWS zone cache fills progressively                             |
+| `volcanoes`               | Volcanoes                              | `gvp` (6 h), `usgs` (10 min)              | `/api/v1/layers/volcanoes`               | Joins a volcano in both feeds                                  |
+| `space-weather`           | Aurora & Space Weather                 | `aurora` (5 min), `kp` (15 min)           | `/api/v1/layers/space-weather`           | Kp rides in metadata, no features                              |
+| `aviation-weather`        | Aviation Weather                       | `metar`, `sigmet`, `isigmet` (5 min each) | `/api/v1/layers/aviation-weather`        | About 5,100 METAR points, 2 MB                                 |
+| `airspace`                | Airspace Restrictions & Airport Delays | `tfr` (10 min), `delays` (5 min)          | `/api/v1/layers/airspace`                | One XNOTAM download per TFR, cached                            |
+| `water-observations`      | Buoys & River Gauges                   | `buoys`, `rivers` (15 min each)           | `/api/v1/layers/water-observations`      | NWPS fetched in 8 bbox tiles, 3 at a time                      |
+| `citizen-sensors`         | Citizen Air & Radiation Sensors        | `airpm` (10 min), `radiation` (30 min)    | `/api/v1/layers/citizen-sensors`         | PM binned to a 0.1° grid; Safecast in 1 h windows              |
+| `internet-infrastructure` | Internet Outages & Data Centers        | `datacenters` (24 h), `outages` (10 min)  | `/api/v1/layers/internet-infrastructure` | IODA countries at hand-written centroids; PeeringDB AUP caveat |
 
 ### Global Hazards (`global-hazards`, token `5`)
 
@@ -859,3 +867,118 @@ PRES PTDY ATMP WTMP DEWP VIS TIDE` header, a `#text` units line, then one row
   shows the sensor count. Safecast devices have different tubes and the cpm to
   µSv/h factor is nominal. Informational only: not a regulatory air quality
   product and not a radiation alert. Voice: toggle only (no alias).
+
+### Internet Outages & Data Centers (`internet-infrastructure`, token `03`)
+
+- **IODA outage alerts** — `https://api.ioda.inetintel.cc.gatech.edu/v2/outages/alerts`
+  (Georgia Tech's Internet Outage Detection and Analysis; keyless JSON, no
+  published rate limit). Two fixed requests per refresh, one after the other:
+  `entityType=country` with `extendWindow=1209600` (14 days back; about 1,000
+  alerts, 270 KB, 3 s in a sample) and `entityType=region` for the plain 24
+  hours (about 190 alerts, 60 KB), both `limit=5000`. The sample window is
+  `from=<now − 24 h>&until=<now>` in epoch seconds. A list that reaches the
+  limit is refused (`invalid_payload`) rather than served cut off, because the
+  newest alerts are the ones a cut would lose. `/v2/outages/events` was
+  considered and not used: it needs no state machine but drops the per-signal
+  levels, and its envelope is the same.
+- **Alerts are state changes, not outages** — each alert says one signal
+  (`bgp`, `ping-slash24`, `gtr` Google traffic, `merit-nt` network telescope)
+  for one entity went to `critical`/`warning` or back to `normal`. The current
+  state of a signal is its newest alert; an outage that is still going shows
+  only the alert that opened it, which may be days old, hence the 14-day
+  lookback (an outage older than 14 days that never closed is not found). The
+  start of an outage is the first alert of the unbroken run of non-normal
+  alerts that ends at the newest one: out, back, out again starts at the last
+  "out". Alerts stamped more than an hour ahead of the server clock are dropped.
+- **Placement** — IODA entities are countries and regions, never coordinates, so
+  each country is drawn at a hand-written marker position (see
+  _Country positions_ below). IODA gives a region no position (it carries an
+  internal `ne_region_id` and its country), so regions are not drawn on their
+  own: a country with no country-wide signal but with region outages becomes a
+  `scope: 'region'` marker at the country position and lists the regions by
+  name; a country-wide outage lists its going regions too. One marker per
+  country, id = ISO code (`outages:TL` on the wire), so nothing stacks.
+- **What is drawn** — a country with a signal going now (`ongoing: true`,
+  `level` the worst current level among its signals, `critical` or `warning`),
+  else a country with going region outages, else a country whose last outage
+  ended in the past 24 hours (`level: 'normal'`, `ongoing: false`, `end` set).
+  Properties: `code`, `name` (as IODA names it), `scope` (`country`/`region`),
+  `level`, `ongoing`, `datasources`, `regions` (at most 8 names) and
+  `regionCount`, `start`, `end`, `url`
+  (`https://ioda.inetintel.cc.gatech.edu/country/<code>`), `timestamp` (the
+  newest alert behind the marker, or the recovery). In a live sample the layer
+  drew 41 markers (29 going, 12 recovered) in 16 KB. Many "going" markers are
+  small territories whose BGP visibility sits below baseline for days; the card
+  says which signals fired and since when, and the legend says IODA signals can
+  raise false alarms. An alert for a code with no position (`AP`, `EU`) is
+  counted in `metadata.sources[outages].unplaced`.
+- **Region list is optional** — if the region request fails, the country
+  markers are still served and `metadata.sources[outages].regionsIncluded` is
+  `false`; only a failing or corrupt country list fails the subsource (the last
+  good snapshot is then served stale). A country list with no alert in 14 days
+  is treated as a broken answer, not as a quiet internet. Every other alert
+  fault (unknown code, unknown level, bad time, upper-case signal name) skips
+  that alert only.
+- **Country positions** — `src/layers/internetInfrastructure/countryCentroids.js`
+  is a hand-written table of `[lon, lat]` for all 251 codes of IODA's country
+  list (253 less its two placeholders, `AP` and `EU`), keyed by ISO 3166-1
+  alpha-2 (plus IODA's `XK`, Kosovo). Derivation: written by hand to 0.05° to
+  0.5° from general geographic knowledge, guided by public-domain references
+  (the geographic coordinates in the CIA World Factbook and country extents in
+  Natural Earth), moved onto land where
+  the plain extent centre falls in the sea (Malaysia on the peninsula, the
+  United States on the contiguous states, Norway on the mainland, Canada,
+  Chile, Vietnam, Indonesia, the Philippines and a few islands). Every position
+  was spot-checked against country outlines (the large countries fall inside
+  their own borders); archipelagos and tiny islands sit on one of their islands
+  or in their waters. No licensed
+  gazetteer was copied. They place a country-scale marker, not survey data. A
+  test pins coverage against IODA's own list (copied by hand) so a code IODA adds
+  shows up as an unplaced marker, not as a crash.
+- **PeeringDB facilities** — `https://www.peeringdb.com/api/fac?depth=0&fields=id,name,org_name,city,country,latitude,longitude,net_count,ix_count,website,status`.
+  One request, no `limit` (anonymous access is rate limited, and a paged read
+  would be many requests): 5,886 records, 1.56 MB with the field list, against
+  several times that with the full records. 5,279 have a position; 607 have
+  null latitude and longitude and are skipped, never drawn at 0,0 (a literal
+  0,0, a latitude or longitude out of range, a non-numeric one, a `status` other
+  than `ok`, no name and a repeated id are skipped too). A list of fewer than
+  1,000 records (PeeringDB answers an error as `{meta: {error}, data: []}`) is
+  refused rather than cached as an empty map. Cached 24 hours, so one request
+  per day per server process. Properties: `facility` (id), `name`, `org`,
+  `city`, `country` (ISO code or null), `netCount`, `ixCount` (networks and
+  exchanges present, null when unusable), `website` (https only; an `http` URL
+  is upgraded and any other scheme dropped), `url` (the facility's PeeringDB
+  page, the card link). Feature id = the facility id; the sample route body is
+  about 2.3 MB (live check: 42 outage markers, 5,279 facilities, 3.2 s cold).
+- **PeeringDB terms** — the PeeringDB Acceptable Use Policy
+  (`https://www.peeringdb.com/aup`) asks that its data not be reproduced,
+  stored in a retrieval system or passed on in bulk without permission, except
+  for "Internet operational" use, which it defines as network troubleshooting,
+  abuse reporting and Internet research and analysis, and not marketing lists,
+  demographic mapping or other commercial use. This fork fetches the list at
+  runtime and keeps it only in server memory for a day; nothing from PeeringDB
+  is committed (the fixtures are hand-written). That fits one operator
+  analysing Internet infrastructure for themselves. **A public deployment
+  serving this layer to other people is passing the list on in bulk: get
+  PeeringDB's permission first, or turn the `datacenters` subsource off.**
+- **IODA terms** — IODA's API responses carry a Georgia Tech Research
+  Corporation copyright notice and the project publishes no separate licence or
+  rate limit that was found; the data is read live, never committed, cached 10
+  minutes and credited with a link. Check the IODA project's terms before
+  redistributing it.
+- **Display** — outage markers are 9 to 14 px dots by level on the ellipsoid
+  (red critical, orange warning, green recovered; a white ring while going,
+  a dark one when recovered; a little smaller when only regions are down), on top
+  of small cyan facility dots sized by the networks present (the proxy lists
+  the data center subsource first so the markers are added last). A click opens
+  a card: status, regions, the signals that fired (BGP routing, active probing,
+  Google traffic, network telescope), start and end ages, a note that the marker
+  sits at the country centre, and a link to the IODA country page; or the
+  organization, city, networks and exchanges, website host and a PeeringDB link.
+  The country name is the UI language's (Intl.DisplayNames), else IODA's. A
+  chip per feed and a legend.
+- **Caveats** — IODA detects drops in measured Internet signals against a
+  baseline; a marker is a signal, not a confirmed outage, and says nothing about
+  where inside the country. Only countries and the regions IODA names are
+  covered, not ASNs. PeeringDB is operator-contributed: facilities are those
+  its members registered, not every data center. Voice: toggle only.

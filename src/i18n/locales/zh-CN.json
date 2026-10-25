@@ -3053,5 +3053,34 @@
   "Radiation ≈ {usv} µSv/h": "辐射 ≈ {usv} µSv/h",
   "Radiation {usv} µSv/h": "辐射 {usv} µSv/h",
   "Dots with a black outline are outdoor Sensor.Community particulate sensors, the median PM2.5 of each 0.1° cell, colored by US EPA air quality category. Dots with a white ring are the latest Safecast radiation reading of each device in the last six hours; counts per minute are converted to µSv/h at a nominal factor, so treat them as estimates. Citizen-built sensors: informational only.": "带黑色轮廓的点是户外 Sensor.Community 颗粒物传感器，显示每个 0.1° 网格的 PM2.5 中位数，并按美国 EPA 空气质量类别着色。带白色圆环的点是每台设备在过去六小时内最新的 Safecast 辐射读数；每分钟计数按标称系数换算为 µSv/h，因此只是估算值。公民传感器：仅供参考。",
-  "Citizen Air & Radiation Sensors": "公民空气与辐射传感器"
+  "Citizen Air & Radiation Sensors": "公民空气与辐射传感器",
+  "Critical outage": "严重中断",
+  "Outage warning": "中断预警",
+  "Recovered in the last 24 h": "过去 24 小时内已恢复",
+  "BGP routing": "BGP 路由",
+  "Active probing": "主动探测",
+  "Google traffic": "谷歌流量",
+  "Network telescope": "网络望远镜",
+  "Outages": "中断",
+  "Data centers": "数据中心",
+  "Regions: {regions}": "地区：{regions}",
+  "Recovered: connectivity is back to normal": "已恢复：连通性恢复正常",
+  "Connectivity dropped inside the country, not country-wide": "连通性在国内局部下降，并非全国范围",
+  "Critical drop in connectivity": "连通性严重下降",
+  "Warning-level drop in connectivity": "连通性下降至预警级别",
+  "Detected by {sources}": "检测来源：{sources}",
+  "started {age} ago": "{age}前开始",
+  "ended {age} ago": "{age}前结束",
+  "Marker at the country centre: IODA reports countries, not places": "标记位于国家中心：IODA 只报告国家，不报告具体地点",
+  "Georgia Tech IODA": "Georgia Tech IODA",
+  "{count} networks": {
+    "other": "{count} 个网络"
+  },
+  "{count} exchanges": {
+    "other": "{count} 个交换点"
+  },
+  "PeeringDB": "PeeringDB",
+  "Data center or network facility": "数据中心或网络设施",
+  "Red and orange markers are countries where Georgia Tech IODA sees internet connectivity dropping, drawn at the country centre because IODA reports countries, not places; green ones recovered in the last 24 hours. Cyan dots are data centers and interconnection facilities listed in PeeringDB. IODA signals can raise false alarms: not proof of an outage.": "红色和橙色标记是 Georgia Tech IODA 检测到互联网连通性下降的国家，因 IODA 只报告国家而非具体地点，所以画在国家中心；绿色表示过去 24 小时内已恢复。青色圆点是 PeeringDB 中列出的数据中心和互联设施。IODA 信号可能误报：并不能证明发生了中断。",
+  "Internet Outages & Data Centers": "互联网中断与数据中心"
 }

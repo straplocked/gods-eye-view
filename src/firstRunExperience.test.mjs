@@ -1016,11 +1016,13 @@ test('the voice TOOL SCHEMA matches the pinned contract — the mission mapping 
   // Aurora & Space Weather adds a fourth; Aviation Weather adds a fifth;
   // Airspace adds a sixth; Buoys & River Gauges adds a seventh (and trims the
   // show_data_layers_menu description to make room); Citizen Air & Radiation
-  // Sensors adds an eighth (and trims three more tool descriptions).
-  assert.equal(block.length, 31249, 'serialized tool schema length drifted');
+  // Sensors adds an eighth (and trims three more tool descriptions); Internet
+  // Outages & Data Centers adds a ninth (and trims the move_camera rangeM
+  // description).
+  assert.equal(block.length, 31242, 'serialized tool schema length drifted');
   assert.equal(
     crypto.createHash('sha256').update(block).digest('hex'),
-    'bf9e6cf40db7d4754c3bcd8aa97d1077f75e56a720ca0eba35c4c266a868962b',
+    '6fcf8be3087a3995ac2ae39136c4be1ba34115769e2564feb2109d32f608a0ec',
     'the first-run missions must ride EXISTING tools: no schema edit, no cache bust',
   );
   const instructions = fs.readFileSync(

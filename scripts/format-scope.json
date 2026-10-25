@@ -1144,5 +1144,11 @@
   "src/layers/citizenSensors/source.test.mjs",
   "src/layers/citizenSensors/cards.test.mjs",
   "src/layers/citizenSensors/ownership.test.mjs",
-  "src/testSupport/citizenSensorsFixtures.mjs"
+  "src/testSupport/citizenSensorsFixtures.mjs",
+  "src/data/internetInfrastructureProxy.test.mjs",
+  "src/layers/internetInfrastructure/records.test.mjs",
+  "src/layers/internetInfrastructure/source.test.mjs",
+  "src/layers/internetInfrastructure/cards.test.mjs",
+  "src/layers/internetInfrastructure/ownership.test.mjs",
+  "src/testSupport/internetInfrastructureFixtures.mjs"
 ]

@@ -235,6 +235,14 @@ export const DATA_CREDITS = [
       '<a href="https://sensor.community/" target="_blank" rel="noopener">Sensor.Community</a> (ODbL) · ' +
       '<a href="https://safecast.org/" target="_blank" rel="noopener">Safecast</a> (CC0)',
   },
+  {
+    key: 'internet-infrastructure',
+    html:
+      'Internet outages: ' +
+      '<a href="https://ioda.inetintel.cc.gatech.edu/" target="_blank" rel="noopener">Georgia Tech IODA</a> · ' +
+      'data centers: ' +
+      '<a href="https://www.peeringdb.com/" target="_blank" rel="noopener">PeeringDB</a>',
+  },
   OSM_CREDIT,
   OPENMAPTILES_CREDIT,
   {
