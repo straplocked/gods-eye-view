@@ -378,6 +378,14 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // not raise. The show_data_layers_menu description lost "dropdown/" and
   // "specific" (18 characters, same meaning), which leaves the prompt at
   // 52,333 under the unchanged 52,350 ceiling and 17 characters spare.
+  // Citizen Air & Radiation Sensors is the eighth: its id is 15 characters in
+  // two enums and the toggle costs 36 (52,369) against 17 spare. Decision:
+  // trim again, not raise. "tell the user" became "say" in the
+  // set_layer_visibility description, "into view" left the show_data_layers_menu
+  // layerId hint and "/dropdown" left the set_panel_open description (25
+  // characters, same meaning), which leaves the prompt at 52,343 under the
+  // unchanged 52,350 ceiling and 7 characters spare: the next keyless layer
+  // has to trim again or go voice-off.
   const size = instructions.length + JSON.stringify(GEV_REALTIME_TOOLS).length;
   assert.ok(size <= 52350, `prompt size ${size}`);
 });

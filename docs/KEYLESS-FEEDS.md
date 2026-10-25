@@ -282,15 +282,16 @@ Read the Global Hazards files as the worked example.
 
 ## Keyless layers
 
-| Layer id             | Name                                   | Subsources (TTL)                          | Route                               | Notes                                     |
-| -------------------- | -------------------------------------- | ----------------------------------------- | ----------------------------------- | ----------------------------------------- |
-| `global-hazards`     | Global Hazards                         | `gdacs` (15 min), `eonet` (30 min)        | `/api/v1/layers/global-hazards`     | First layer on the kit                    |
-| `weather-warnings`   | Weather & Tsunami Warnings             | `nws` (2 min), `tsunami` (5 min)          | `/api/v1/layers/weather-warnings`   | NWS zone cache fills progressively        |
-| `volcanoes`          | Volcanoes                              | `gvp` (6 h), `usgs` (10 min)              | `/api/v1/layers/volcanoes`          | Joins a volcano in both feeds             |
-| `space-weather`      | Aurora & Space Weather                 | `aurora` (5 min), `kp` (15 min)           | `/api/v1/layers/space-weather`      | Kp rides in metadata, no features         |
-| `aviation-weather`   | Aviation Weather                       | `metar`, `sigmet`, `isigmet` (5 min each) | `/api/v1/layers/aviation-weather`   | About 5,100 METAR points, 2 MB            |
-| `airspace`           | Airspace Restrictions & Airport Delays | `tfr` (10 min), `delays` (5 min)          | `/api/v1/layers/airspace`           | One XNOTAM download per TFR, cached       |
-| `water-observations` | Buoys & River Gauges                   | `buoys`, `rivers` (15 min each)           | `/api/v1/layers/water-observations` | NWPS fetched in 8 bbox tiles, 3 at a time |
+| Layer id             | Name                                   | Subsources (TTL)                          | Route                               | Notes                                             |
+| -------------------- | -------------------------------------- | ----------------------------------------- | ----------------------------------- | ------------------------------------------------- |
+| `global-hazards`     | Global Hazards                         | `gdacs` (15 min), `eonet` (30 min)        | `/api/v1/layers/global-hazards`     | First layer on the kit                            |
+| `weather-warnings`   | Weather & Tsunami Warnings             | `nws` (2 min), `tsunami` (5 min)          | `/api/v1/layers/weather-warnings`   | NWS zone cache fills progressively                |
+| `volcanoes`          | Volcanoes                              | `gvp` (6 h), `usgs` (10 min)              | `/api/v1/layers/volcanoes`          | Joins a volcano in both feeds                     |
+| `space-weather`      | Aurora & Space Weather                 | `aurora` (5 min), `kp` (15 min)           | `/api/v1/layers/space-weather`      | Kp rides in metadata, no features                 |
+| `aviation-weather`   | Aviation Weather                       | `metar`, `sigmet`, `isigmet` (5 min each) | `/api/v1/layers/aviation-weather`   | About 5,100 METAR points, 2 MB                    |
+| `airspace`           | Airspace Restrictions & Airport Delays | `tfr` (10 min), `delays` (5 min)          | `/api/v1/layers/airspace`           | One XNOTAM download per TFR, cached               |
+| `water-observations` | Buoys & River Gauges                   | `buoys`, `rivers` (15 min each)           | `/api/v1/layers/water-observations` | NWPS fetched in 8 bbox tiles, 3 at a time         |
+| `citizen-sensors`    | Citizen Air & Radiation Sensors        | `airpm` (10 min), `radiation` (30 min)    | `/api/v1/layers/citizen-sensors`    | PM binned to a 0.1° grid; Safecast in 1 h windows |
 
 ### Global Hazards (`global-hazards`, token `5`)
 
@@ -764,3 +765,97 @@ PRES PTDY ATMP WTMP DEWP VIS TIDE` header, a `#text` units line, then one row
   categories are the NWS's own. Informational only: not for navigation, and not
   a flood warning. Voice: toggle only (no alias); the show_data_layers_menu tool
   description was shortened by 18 characters to fit the prompt budget.
+
+### Citizen Air & Radiation Sensors (`citizen-sensors`, token `02`)
+
+- **Air** — `https://data.sensor.community/static/v2/data.dust.min.json`
+  (Sensor.Community, formerly luftdaten; ODbL). A JSON array of the last five
+  minutes of every dust sensor: 9,560 readings from 9,434 locations in the
+  sample (4.3 MB, no compression offered, about 1.4 s), rewritten about every
+  five minutes. Each reading has `timestamp` (`YYYY-MM-DD HH:MM:SS`, UTC),
+  `location` (`id`, `latitude` and `longitude` as strings, `indoor` 0 or 1,
+  `country`, `exact_location`) and `sensordatavalues`, a list of
+  `{value_type, value}` strings in which `P1` is PM10 and `P2` is PM2.5
+  (µg/m³). Sensor types vary (8,633 SDS011, 509 SPS30, 185 PMS5003, …); some
+  readings carry only humidity or temperature and are skipped.
+- **Filters** — a reading is dropped unless its location has `indoor` equal to
+  0 (`"0"` and `false` also pass; a missing flag is not provably outdoor, and
+  276 of the 9,560 sample readings were indoor), its coordinates are in range
+  and not exactly 0,0, its time is a real UTC time no older than 3 hours or
+  more than an hour ahead, and it has `P2` between 0 and 1000 µg/m³ inclusive
+  (a `P1`, when present, must be in the same range; a negative or over-1000
+  value marks a faulty sensor and drops the reading). A location reported more
+  than once keeps its newest reading (ties: the higher reading id).
+- **Binning and why** — the survivors (9,060 sensors in the sample) are binned
+  to a fixed 0.1° grid (cell index = floor((coordinate + 180 or 90) × 10),
+  computed on rounded integers so decimal inputs never drift at a cell edge;
+  longitude 180 and latitude 90 clamp into the last cell). The sample gives 3,893
+  cells, 0.8 MB of features (1.0 MB on the wire with the kit's properties). The
+  cost of other resolutions on that sample: 0.05° gives 5,400 cells (1.4 MB),
+  0.2° gives 2,500 (0.65 MB). 0.1° keeps one dot per neighborhood in the dense
+  parts of Europe and stays well under the 1.5 MB budget even if the sensor
+  count grows by half. A cell serves the **median**, never the mean: low-cost
+  sensors fail by sticking at an extreme value, and the median of a cell is
+  unmoved by a minority of them. The dot sits at the **cell center**, so no
+  individual sensor's position is served. Cells are ordered busiest first and the
+  proxy keeps at most 4,500 (the kit reports `truncated: true`), so a growing
+  network drops the sparsest cells, never the best covered.
+- **Air properties** — id = `<lon index>_<lat index>` (`airpm:1891_1385` on the
+  wire): `pm25` and `pm10` (medians, 0.1 µg/m³; `pm10` is `null` when no sensor
+  in the cell reports it), `sensors` (outdoor sensors in the cell), `aqi` and
+  `category` (`good`, `moderate`, `usg`, `unhealthy`, `very-unhealthy`,
+  `hazardous`), `timestamp` (newest reading in the cell). The route's
+  `metadata.sources[0].sensors` is the number of locations used. AQI is the US
+  EPA index of the PM2.5 median with the 2024 breakpoints (truncated to 0.1):
+  good 0 to 9.0 (AQI 0 to 50), moderate 9.1 to 35.4 (51 to 100), unhealthy for
+  sensitive groups 35.5 to 55.4 (101 to 150), unhealthy 55.5 to 125.4 (151 to
+  200), very unhealthy 125.5 to 225.4 (201 to 300), hazardous 225.5 to 325.4
+  (301 to 500, capped at 500 above). The index is linear inside a category.
+  Colors are the EPA's: green, yellow, orange, red, purple, maroon.
+- **Radiation** — `https://api.safecast.org/measurements.json` (Safecast; CC0).
+  The API takes `captured_after`, `captured_before`, `per_page` (1,000 is
+  honored; a larger value falls back to 500) and `page`, and always lists oldest
+  first (`order` is ignored). Without a window it lists measurements from 2011
+  on, and without `captured_before` it includes rows stamped years in the
+  future (2029 and 2061 were seen). Volume is about 500 to 700 rows an hour
+  worldwide (a 1,000-row page covers about 1.5 hours; each page is about 0.3 MB).
+  **Why windows:** an unbounded recent window would fill its pages with the
+  oldest rows and lose the newest ones, so the server asks for six one-hour
+  windows, newest first, one request at a time (one to three pages per window, so
+  6 to 18 requests of about 0.3 MB per refresh), each retried once on an HTTP
+  error; any request still failing fails the whole `radiation` subsource (timeout
+  120 s) and the last good snapshot is served stale, so a missing hour cannot read
+  as "no readings". A window's boundary second may be read twice; devices are
+  de-duplicated. Rows carry `unit` (`cpm` 85%, `usv` 10%, plus `celcius`,
+  `status` and `211` rows that are ignored), `value`, `device_id`, `captured_at`
+  (ISO, UTC), `latitude`, `longitude`. A reading is dropped unless its value is
+  above 0 and plausible (at most 1000 µSv/h, which is 334,000 cpm), its position
+  is in range and not 0,0, and its time is real, within 6 hours and no more than
+  an hour ahead. A device keeps its newest reading (at the same instant a µSv/h
+  row beats a cpm row); a row naming no device (11% of the sample) counts as one
+  device per 0.01° cell. No rows at all, or none usable, is a corrupt payload
+  (`invalid_payload`), never an empty map. The realtime device feed
+  `tt.safecast.org/devices` was also tried and not used: it is one 1.4 MB list,
+  but about two thirds of its entries are air-quality notes with no radiation
+  value, a radiation device appears many times, and some entries carry contact
+  names and e-mail addresses.
+- **Radiation properties** — id = `d<device id>` (`radiation:d65002`) or
+  `g<lon index>_<lat index>` at 0.01° for a row with no device: `device` (or
+  `null`), `unit` (as reported), `cpm` (or `null`), `usv`, `usvEstimated`,
+  `timestamp`. `usv` is the reading itself when the unit is µSv/h; for cpm it is
+  cpm / 334 (the nominal factor of an LND 7318 tube; other detectors differ),
+  rounded to 0.001, with `usvEstimated: true`. Positions are rounded to 3
+  decimals (~110 m); no user id is served; at most the newest 600 devices.
+- **Display** — PM cells are 6 to 10 px dots on the ellipsoid (more sensors,
+  bigger) in the EPA color with a black outline; radiation dots are 9 px with a
+  white ring, colored by dose rate (under 0.10, 0.10 to 0.29, 0.30 to 0.99, 1 to
+  9.9, 10 µSv/h and over; natural background is 0.05 to 0.3). A click opens a
+  card (PM2.5 and AQI, PM10, sensor count and age; or cpm, the µSv/h estimate and
+  how it was made, the device and age) that opens the Sensor.Community or
+  Safecast map. The row has a chip per feed and a legend.
+- **Caveats** — two upstream hosts, both keyless. Sensor.Community sensors are
+  uncalibrated and humidity sensitive; a single sensor in a cell can read high
+  (the real sample has a few lone-sensor hazardous cells), which is why the card
+  shows the sensor count. Safecast devices have different tubes and the cpm to
+  µSv/h factor is nominal. Informational only: not a regulatory air quality
+  product and not a radiation alert. Voice: toggle only (no alias).

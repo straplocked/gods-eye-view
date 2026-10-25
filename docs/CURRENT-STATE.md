@@ -3725,6 +3725,7 @@ its criteria cannot be silently ignored.
 | Aviation Weather 🛩️ (`aviation-weather`) | NOAA AWC METARs worldwide (bulk cache file, points colored by flight category) + US and international SIGMET/AIRMET advisory areas by hazard; keyless | `src/layers/aviationWeather/` via `src/app/layers/aviationWeather.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/aviation-weather` (+ `/status`) | 5 min (server caches: metar, sigmet, isigmet 5 min each) |
 | Airspace Restrictions & Airport Delays 🚧 (`airspace`) | FAA Temporary Flight Restrictions (list + one XNOTAM download per TFR for the geometry; circles and arcs built into polygons) + FAA NAS Status airport delays (ground stops, ground delay programs, arrival/departure delays, closures) as points at AWC-resolved airport positions; keyless | `src/layers/airspace/` via `src/app/layers/airspace.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/airspace` (+ `/status`) | 5 min (server caches: tfr list 10 min and each TFR's geometry until it leaves the list, delays 5 min, airport positions 7 days) |
 | Buoys & River Gauges 🌊 (`water-observations`) | NOAA NDBC latest observations (buoys and coastal stations, points colored by wind speed) + NWPS river gauges at or above flood action stage (observed or forecast; fetched in eight bounding-box tiles); keyless | `src/layers/waterObservations/` via `src/app/layers/waterObservations.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/water-observations` (+ `/status`) | 15 min (server caches: buoys 15 min, rivers 15 min) |
+| Citizen Air & Radiation Sensors ☢️ (`citizen-sensors`) | Sensor.Community outdoor particulate sensors binned to a 0.1° grid (median PM2.5 per cell, colored by US EPA AQI category) + the latest Safecast radiation reading of each device in the last 6 hours (cpm or µSv/h, colored by dose rate); keyless | `src/layers/citizenSensors/` via `src/app/layers/citizenSensors.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/citizen-sensors` (+ `/status`) | 10 min (server caches: particulates 10 min, radiation 30 min) |
 | Weather & Tsunami Warnings ⛈️ (`weather-warnings`) | NWS active alerts (areas: the alert polygon, or the union of its NWS zones from a 7-day zone cache) + NOAA tsunami.gov bulletins (PAAQ, PHEB; one point each); keyless | `src/layers/weatherWarnings/` via `src/app/layers/weatherWarnings.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/weather-warnings` (+ `/status`) | 2 min (server caches: NWS 2 min, tsunami 5 min) |
 
 GNSS Integrity samples a 250 nm circle around the Earth point under the screen
@@ -3890,6 +3891,30 @@ white ring while flooding now. Informational only: not for navigation, and not
 a flood warning. Voice: toggle only; the new entry would have put the Realtime
 prompt one character over its ceiling, so the `show_data_layers_menu`
 description was trimmed by 18 characters instead of raising the ceiling again.
+
+Citizen Air & Radiation Sensors (`citizen-sensors`, layer token `02`) is the
+eighth layer on the kit. The `airpm` subsource reads Sensor.Community's
+`data.dust.min.json` (about 4.3 MB, the last five minutes of every dust sensor,
+rewritten about every five minutes). It keeps only readings from locations
+explicitly flagged outdoor, with PM2.5 (and PM10 when present) between 0 and
+1000 µg/m³ and a real time within the last 3 hours, keeps the newest reading
+per location, and bins the survivors (about 9,000 sensors) onto a fixed 0.1°
+grid, about 11 km. One dot per cell (about 3,900) is drawn at the cell center
+and carries the median PM2.5 and PM10, the sensor count, the newest reading time
+and the US EPA AQI category and index of the PM2.5 median (2024 breakpoints:
+good to 9.0, moderate to 35.4, unhealthy for sensitive groups to 55.4,
+unhealthy to 125.4, very unhealthy to 225.4, hazardous above). The grid keeps
+the response near 1 MB (plotting every sensor would be 2.4 MB) and a median,
+not a mean, keeps one stuck sensor from recoloring a neighborhood; no
+individual sensor position leaves the server. The `radiation` subsource asks
+Safecast's `api.safecast.org/measurements.json` for the last six hours in six
+one-hour windows, newest first and one request at a time (the API lists oldest
+first and has no latest-per-device view, so one big window would lose the newest
+rows), keeps the newest counts-per-minute or µSv/h reading per device and serves
+one dot per device colored by dose rate. A cpm reading is converted at a nominal
+334 cpm per µSv/h and flagged as an estimate on the card. Particulates are
+cached 10 minutes, radiation 30. Citizen-built, uncalibrated sensors:
+informational only. Voice: toggle only.
 
 Street Level is a docked, collapsible right-rail panel (`#street-level-panel`,
 layer token `0`, option owner `street-level`, panel `ui` token `t`) that starts

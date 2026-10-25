@@ -91,6 +91,7 @@ const PANEL_GROUPS = [
       'weather-warnings',
       'aviation-weather',
       'water-observations',
+      'citizen-sensors',
     ],
   },
   {

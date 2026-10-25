@@ -1138,5 +1138,11 @@
   "src/layers/waterObservations/source.test.mjs",
   "src/layers/waterObservations/cards.test.mjs",
   "src/layers/waterObservations/ownership.test.mjs",
-  "src/testSupport/waterObservationsFixtures.mjs"
+  "src/testSupport/waterObservationsFixtures.mjs",
+  "src/data/citizenSensorsProxy.test.mjs",
+  "src/layers/citizenSensors/records.test.mjs",
+  "src/layers/citizenSensors/source.test.mjs",
+  "src/layers/citizenSensors/cards.test.mjs",
+  "src/layers/citizenSensors/ownership.test.mjs",
+  "src/testSupport/citizenSensorsFixtures.mjs"
 ]
