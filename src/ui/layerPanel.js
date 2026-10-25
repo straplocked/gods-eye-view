@@ -74,6 +74,7 @@ const PANEL_GROUPS = [
       'fire-perimeters',
       'global-hazards',
       'volcanoes',
+      'space-weather',
       'gnss-integrity',
     ],
   },

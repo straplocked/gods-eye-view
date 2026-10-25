@@ -251,6 +251,12 @@ const layers = [
     noQuery: 'one point per volcano; no countable records',
   },
   {
+    id: 'space-weather',
+    aliases: [],
+    context: false,
+    noQuery: 'aurora bands; no countable records',
+  },
+  {
     id: 'weather-cyclones',
     aliases: ['cyclones', 'hurricanes', 'typhoons', 'tropical storms'],
     context: false,

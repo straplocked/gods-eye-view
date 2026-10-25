@@ -1113,5 +1113,11 @@
   "src/layers/volcanoes/source.test.mjs",
   "src/layers/volcanoes/cards.test.mjs",
   "src/layers/volcanoes/ownership.test.mjs",
-  "src/testSupport/volcanoesFixtures.mjs"
+  "src/testSupport/volcanoesFixtures.mjs",
+  "src/data/spaceWeatherProxy.test.mjs",
+  "src/layers/spaceWeather/records.test.mjs",
+  "src/layers/spaceWeather/source.test.mjs",
+  "src/layers/spaceWeather/cards.test.mjs",
+  "src/layers/spaceWeather/ownership.test.mjs",
+  "src/testSupport/spaceWeatherFixtures.mjs"
 ]

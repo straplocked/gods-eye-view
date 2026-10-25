@@ -36,6 +36,7 @@ const DEFAULT_STYLE = Object.freeze({
   outlineWidth: 1,
   fillAlpha: 0.25,
   lineWidth: 2,
+  outline: true,
 });
 
 const toCartesian = ([lon, lat]) => Cesium.Cartesian3.fromDegrees(lon, lat);
@@ -112,8 +113,12 @@ function geometryParts(geometry, style, color) {
               color.withAlpha(style.fillAlpha),
             ),
           },
-          // Entity polygons cannot outline clamped geometry themselves.
-          polyline: lineGraphics(outerPositions, style, color),
+          // Entity polygons cannot outline clamped geometry themselves. A
+          // style with `outline: false` is a fill only (Aurora's probability
+          // bands, where the outline would draw seams between neighbors).
+          ...(style.outline === false
+            ? {}
+            : { polyline: lineGraphics(outerPositions, style, color) }),
         };
       });
     }
@@ -134,10 +139,11 @@ function geometryParts(geometry, style, color) {
  * @param {string} options.icon
  * @param {string} options.sourceName - English source label for the panel row.
  * @param {{getSnapshot: Function}} options.source - Resolves `{features, metadata}`.
- * @param {Array<{id: string, label: string, title?: string}>} [options.subsources] - Row chips; labels are English msg() keys.
- * @param {(feature: Object) => Object} [options.style] - `{color, outlineColor, pixelSize, outlineWidth, fillAlpha, lineWidth}` (CSS colors).
- * @param {(feature: Object, nowMs: number) => {title: string, details: string[], accent: string, link?: string}} options.card
- * @param {(features: Array<Object>) => Array<Object>} [options.legend] - Panel legend rows for the visible features.
+ * @param {Array<{id: string, label: string, title?: string, chip?: boolean}>} [options.subsources] - Row chips; labels are English msg() keys. `chip: false` keeps the name for the "feed unavailable" status without a toggle (a feed with no features of its own).
+ * @param {(feature: Object) => Object} [options.style] - `{color, outlineColor, pixelSize, outlineWidth, fillAlpha, lineWidth, outline}` (CSS colors; `outline: false` draws areas without an outline).
+ * @param {(feature: Object, nowMs: number, metadata: ?Object) => {title: string, details: string[], accent: string, link?: string}} options.card - `metadata` is the latest response's `metadata` member.
+ * @param {(features: Array<Object>, metadata: ?Object) => Array<Object>} [options.legend] - Panel legend rows for the visible features.
+ * @param {(metadata: ?Object, nowMs: number) => ?{text: string, title?: string}} [options.rowInfo] - A line under the panel row built from the response `metadata` (Aurora & Space Weather shows the latest Kp); null hides it.
  * @param {(feature: Object, anchor: {lon: number, lat: number}) => Object} [options.analystRecord]
  * @param {number} [options.updateInterval=300000]
  * @returns {Object} Layer module (init/enable/disable/update/destroy/getStats/getRowControls/getAnalystRecords).
@@ -152,6 +158,7 @@ export function createKeylessFeatureLayer({
   style = () => DEFAULT_STYLE,
   card,
   legend = null,
+  rowInfo = null,
   analystRecord = null,
   updateInterval = 300_000,
   overlayHost = null,
@@ -173,6 +180,7 @@ export function createKeylessFeatureLayer({
   let _request = null;
   let _enabled = false;
   let _features = [];
+  let _metadata = null;
   let _signature = null;
   let _count = 0;
   let _lastUpdate = null;
@@ -211,7 +219,7 @@ export function createKeylessFeatureLayer({
       overlayHost.setEntries(id, [], CARD_HOST_OPTIONS);
       return;
     }
-    const model = card(row.feature, Date.now());
+    const model = card(row.feature, Date.now(), _metadata);
     const link = openExternal ? safeExternalLink(model.link) : null;
     const entry = {
       id: `${id}-card:${row.feature.id}`,
@@ -395,6 +403,7 @@ export function createKeylessFeatureLayer({
         const features = Array.isArray(snapshot?.features)
           ? snapshot.features
           : [];
+        _metadata = snapshot?.metadata ?? null;
         const signature = JSON.stringify(features);
         if (signature !== _signature) {
           _features = features;
@@ -426,6 +435,7 @@ export function createKeylessFeatureLayer({
       _entityFeature.clear();
       _pointEntities.clear();
       _features = [];
+      _metadata = null;
       _signature = null;
       _rowListener = null;
       _viewer = null;
@@ -443,21 +453,33 @@ export function createKeylessFeatureLayer({
     /** Panel row: one chip per subsource, plus the configured legend. */
     getRowControls() {
       const counts = countBySource(_features);
+      const info = rowInfo ? rowInfo(_metadata, Date.now()) : null;
       return {
+        ...(info?.text
+          ? {
+              info: info.text,
+              ...(info.title ? { infoTitle: info.title } : {}),
+            }
+          : {}),
         chips: subsourceChips(
-          subsources.map((entry) => ({
-            id: entry.id,
-            label: t(entry.label),
-            title: t('{source}: {count} loaded · click to show or hide', {
-              source: t(entry.label),
-              count: counts.get(entry.id) || 0,
-            }),
-          })),
+          subsources
+            .filter((entry) => entry.chip !== false)
+            .map((entry) => ({
+              id: entry.id,
+              label: t(entry.label),
+              title: t('{source}: {count} loaded · click to show or hide', {
+                source: t(entry.label),
+                count: counts.get(entry.id) || 0,
+              }),
+            })),
           _hidden,
           toggleSubsource,
         ),
         legend: legend
-          ? legend([..._rendered.values()].map(({ feature }) => feature))
+          ? legend(
+              [..._rendered.values()].map(({ feature }) => feature),
+              _metadata,
+            )
           : [],
       };
     },

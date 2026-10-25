@@ -3721,6 +3721,7 @@ its criteria cannot be silently ignored.
 | Fire Perimeters 🔥 | NIFC WFIGS current interagency perimeters (keyless, paged past the 2000-record cap); InciWeb catalog + incident page origin and update time checks for verified incident-page links | `src/layers/perimeters/` via `src/app/layers/perimeters.js` | `/api/fire-perimeters` + `/api/fire-perimeters/inciweb/*` | 5 min (server caches: catalog 1 h; publication 30 min) |
 | Global Hazards ⚠️ (`global-hazards`) | GDACS current events (EQ, TC, FL, VO, DR, WF; one MAP list per type) + NASA EONET open events (30 days); keyless, one point (or EONET area) per event | `src/layers/globalHazards/` via `src/app/layers/globalHazards.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/global-hazards` (+ `/status`) | 15 min (server caches: GDACS 15 min, EONET 30 min) |
 | Volcanoes 🌋 (`volcanoes`) | Smithsonian GVP continuing eruptions (WFS) + USGS Volcano Hazards Program alert levels (elevated only); keyless, one point per volcano, a volcano in both feeds merged | `src/layers/volcanoes/` via `src/app/layers/volcanoes.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/volcanoes` (+ `/status`) | 10 min (server caches: GVP 6 h, USGS 10 min) |
+| Aurora & Space Weather 🌌 (`space-weather`) | NOAA SWPC OVATION aurora nowcast (1° grid traced into probability-band areas, 10 % and up) + latest planetary Kp / NOAA G-scale in the row and card; keyless | `src/layers/spaceWeather/` via `src/app/layers/spaceWeather.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/space-weather` (+ `/status`) | 5 min (server caches: aurora 5 min, Kp 15 min) |
 | Weather & Tsunami Warnings ⛈️ (`weather-warnings`) | NWS active alerts (areas: the alert polygon, or the union of its NWS zones from a 7-day zone cache) + NOAA tsunami.gov bulletins (PAAQ, PHEB; one point each); keyless | `src/layers/weatherWarnings/` via `src/app/layers/weatherWarnings.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/weather-warnings` (+ `/status`) | 2 min (server caches: NWS 2 min, tsunami 5 min) |
 
 GNSS Integrity samples a 250 nm circle around the Earth point under the screen
@@ -3806,6 +3807,24 @@ GVP list changes by hand a few times a day (6 h cache); USGS answers 404 to a
 User-Agent that carries a URL, so that one request sends the bare
 `GodsEyeView/fork`. Voice: toggle only (the prompt-size ceiling was raised by
 50 characters for it).
+
+Aurora & Space Weather (`space-weather`, layer token `8`) is the fourth layer
+on the kit and the first whose second feed has no geometry. The `aurora`
+subsource reads the NOAA SWPC OVATION nowcast (a 1° grid, `[lon 0..359, lat,
+probability %]`), wraps longitude into -180..180, keeps cells at 10 % or more
+and traces them into polygons per probability band (10-20, 20-40, 40-60,
+60 %+), hemisphere and 90° block of longitude: about 6 KB for the October
+2026 samples (about 790 and 1,060 cells), 30 KB for a solid belt of 22,000
+cells and 125 KB for a ragged storm of 28,000, and a payload that would need
+more than 25,000 vertices (about 400 KB) is refused as noise. The areas are
+fills with no outline (an outline would draw seams between blocks), and a click
+opens a card with the band, the peak chance, the nowcast time and the latest
+Kp. The `kp` subsource reads the planetary K-index and serves no features:
+its latest value, interval, NOAA G-level and 24-hour peak ride in
+`metadata.sources[kp]`, and the panel row shows "Kp 7.33 · G3 strong
+geomagnetic storm" (the kit's new `rowInfo` hook). Both feeds are informational
+model and index output; the aurora grid is a nowcast of probability, not a
+report of what is visible. Voice: toggle only ("aurora").
 
 Street Level is a docked, collapsible right-rail panel (`#street-level-panel`,
 layer token `0`, option owner `street-level`, panel `ui` token `t`) that starts

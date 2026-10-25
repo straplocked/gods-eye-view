@@ -357,6 +357,11 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // spare. Decision: raise the ceiling by 50 to 52,250 so the layer keeps a
   // voice toggle, rather than making it voice-off; the next keyless layer
   // starts from 33 spare and has the same decision to make.
+  // Aurora & Space Weather is the fourth: a toggle with no alias costs 32
+  // characters (52,249); the "aurora" alias would have cost 22 more (52,271),
+  // so it was left out rather than raising the ceiling again. One character
+  // is spare: the next keyless layer has to decide (voice-off, trimming
+  // elsewhere or a new budget).
   const size = instructions.length + JSON.stringify(GEV_REALTIME_TOOLS).length;
   assert.ok(size <= 52250, `prompt size ${size}`);
 });

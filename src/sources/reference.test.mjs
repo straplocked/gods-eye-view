@@ -21,6 +21,7 @@ test('reference factories retain compatibility without starting acquisition or s
     'global-hazards',
     'weather-warnings',
     'volcanoes',
+    'space-weather',
   ]);
   assert.notEqual(first.earthquakes, second.earthquakes);
   assert.notEqual(first['air-quality'], second['air-quality']);
@@ -30,6 +31,7 @@ test('reference factories retain compatibility without starting acquisition or s
   assert.notEqual(first['global-hazards'], second['global-hazards']);
   assert.notEqual(first['weather-warnings'], second['weather-warnings']);
   assert.notEqual(first.volcanoes, second.volcanoes);
+  assert.notEqual(first['space-weather'], second['space-weather']);
   assert.equal(typeof first.earthquakes.getSnapshot, 'function');
   assert.equal(typeof first['air-quality'].getSnapshot, 'function');
   assert.equal(typeof first['fire-perimeters'].getSnapshot, 'function');
@@ -38,5 +40,6 @@ test('reference factories retain compatibility without starting acquisition or s
   assert.equal(typeof first['global-hazards'].getSnapshot, 'function');
   assert.equal(typeof first['weather-warnings'].getSnapshot, 'function');
   assert.equal(typeof first.volcanoes.getSnapshot, 'function');
+  assert.equal(typeof first['space-weather'].getSnapshot, 'function');
   assert.equal(requests, 0);
 });
