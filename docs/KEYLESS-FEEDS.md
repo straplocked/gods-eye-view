@@ -266,6 +266,11 @@ Read the Global Hazards files as the worked example.
     Token `9` was the last single character; the next layer gets `00`, and the
     frontier values in the token tests move to `00`/`01` (digits are exhausted,
     so the digit fixtures in those tests are empty or removed).
+    Airspace is a toggle with no alias and costs 22 (52,309 against 13 spare);
+    the ceiling is now 52,350, 41 spare. That is the fourth raise in a row: the
+    next layer should trim the prompt or the manifest rather than raise it again.
+    Airspace took token `00`, the first two-character token; the next layer gets
+    `01`, and the frontier values in the token tests move to `01`/`02`.
 11. **Tests**: `records.test.mjs` on hand-written fixtures (valid output via
     `assertValidFeatureCollection`), a proxy test (both hooks, TTL, stale on
     error, byte cap, sanitized 502, no cached empty snapshot, single flight,
@@ -277,13 +282,14 @@ Read the Global Hazards files as the worked example.
 
 ## Keyless layers
 
-| Layer id           | Name                       | Subsources (TTL)                          | Route                             | Notes                              |
-| ------------------ | -------------------------- | ----------------------------------------- | --------------------------------- | ---------------------------------- |
-| `global-hazards`   | Global Hazards             | `gdacs` (15 min), `eonet` (30 min)        | `/api/v1/layers/global-hazards`   | First layer on the kit             |
-| `weather-warnings` | Weather & Tsunami Warnings | `nws` (2 min), `tsunami` (5 min)          | `/api/v1/layers/weather-warnings` | NWS zone cache fills progressively |
-| `volcanoes`        | Volcanoes                  | `gvp` (6 h), `usgs` (10 min)              | `/api/v1/layers/volcanoes`        | Joins a volcano in both feeds      |
-| `space-weather`    | Aurora & Space Weather     | `aurora` (5 min), `kp` (15 min)           | `/api/v1/layers/space-weather`    | Kp rides in metadata, no features  |
-| `aviation-weather` | Aviation Weather           | `metar`, `sigmet`, `isigmet` (5 min each) | `/api/v1/layers/aviation-weather` | About 5,100 METAR points, 2 MB     |
+| Layer id           | Name                                   | Subsources (TTL)                          | Route                             | Notes                               |
+| ------------------ | -------------------------------------- | ----------------------------------------- | --------------------------------- | ----------------------------------- |
+| `global-hazards`   | Global Hazards                         | `gdacs` (15 min), `eonet` (30 min)        | `/api/v1/layers/global-hazards`   | First layer on the kit              |
+| `weather-warnings` | Weather & Tsunami Warnings             | `nws` (2 min), `tsunami` (5 min)          | `/api/v1/layers/weather-warnings` | NWS zone cache fills progressively  |
+| `volcanoes`        | Volcanoes                              | `gvp` (6 h), `usgs` (10 min)              | `/api/v1/layers/volcanoes`        | Joins a volcano in both feeds       |
+| `space-weather`    | Aurora & Space Weather                 | `aurora` (5 min), `kp` (15 min)           | `/api/v1/layers/space-weather`    | Kp rides in metadata, no features   |
+| `aviation-weather` | Aviation Weather                       | `metar`, `sigmet`, `isigmet` (5 min each) | `/api/v1/layers/aviation-weather` | About 5,100 METAR points, 2 MB      |
+| `airspace`         | Airspace Restrictions & Airport Delays | `tfr` (10 min), `delays` (5 min)          | `/api/v1/layers/airspace`         | One XNOTAM download per TFR, cached |
 
 ### Global Hazards (`global-hazards`, token `5`)
 
@@ -583,3 +589,101 @@ kpMax24h}` (`kpMax24h` = highest of the 8 latest rows) next to the kit's own
   are not in the CSV (AWC's stations file is a separate download), so cards use
   the ICAO id. Polygons approximate the issued text. Informational only: not an
   official briefing or for flight planning. Voice: toggle only (no alias).
+
+### Airspace Restrictions & Airport Delays (`airspace`, token `00`)
+
+- **TFR list** — `https://tfr.faa.gov/tfrapi/exportTfrList` (JSON array, 76
+  entries in the live sample: SECURITY 48, HAZARDS 14, VIP 6, AIR SHOWS/SPORTS
+  6, UAS PUBLIC GATHERING 1, SPECIAL 1). Each entry has `notam_id` ("6/2117"),
+  `type`, `facility`, `state`, `description` and `creation_date`, and **no
+  geometry**. Only `<digits>/<digits>` ids are accepted (the id is spliced into
+  the download URL); a repeated id keeps its first row; the list is capped at 300. A list that is not an array is a corrupt payload.
+- **TFR geometry** — the keyless per-NOTAM XNOTAM download
+  `https://tfr.faa.gov/download/detail_6_2117.xml` (the same file the FAA site
+  links as "Sample XML Data Packet"; 10 to 200 KB, 512 KiB cap). One
+  `TFRAreaGroup` per restricted area ("Area A", "Area B", …) carries the
+  altitude limits (`aseTFRArea`: `HEI` = AGL, `ALT` = MSL, `FL` units in
+  hundreds of feet), the FAA's merged outline (`abdMergedArea`: great-circle
+  vertices, circles and arcs already flattened to 10-degree steps, in 61 of 76
+  samples) and the original shapes (`aseShapes/Abd/Avx`: `GRC` positions, `CIR`
+  circles with `valRadiusArc` and `uomRadiusArc`, `CWA`/`CCA` arcs about
+  `geoLatArc`/`geoLongArc`). The layer uses the merged outline when it reads,
+  else builds a polygon from the shapes: a circle is 36 vertices (every 10
+  degrees of bearing) at exactly the radius on the mean sphere (1 NM = 1,852 m);
+  an arc runs from the previous vertex to the next about its center, clockwise
+  for `CWA` and counter-clockwise for `CCA`, in steps of at most 10 degrees.
+  Checked against the FAA's own merged outlines on all 65 circle and arc areas
+  in the live sample: the polygon areas agree within 0.8 percent. Rings are rounded to 5 decimals (~1 m), closed, wound
+  counter-clockwise; a shape across the antimeridian, a vertex type this layer
+  cannot draw (`FNT`, the national border), a collinear or out-of-range ring is
+  skipped. Nationwide notices and the border TFRs (15 of 76) have no geometry:
+  no feature, counted in `metadata.sources[].withoutGeometry`.
+- **Times** — `dateEffective`/`dateExpire` are local times in `codeTimeZone`
+  (UTC, EDT, CDT, MDT, PDT, AKDT, Guam, … are in the table); they become ISO
+  UTC. A zone the table does not know leaves both times null rather than guess,
+  the area is kept and the card says nothing about validity. No `dateExpire`
+  means until further notice. A TFR past its expiry is dropped at every refresh
+  from the cached geometry, without a download.
+- **Caching and politeness** — a refresh is one list request plus a download
+  for each TFR that is new, changed (`creation_date`), older than 6 hours or
+  failed earlier, at most four at a time (the first read is ~76 downloads in
+  about 2 seconds, then ~0 per refresh). A TFR that leaves the list drops its
+  cache entry. A single failing download skips only that NOTAM (counted in
+  `pendingDetails`, retried at the next refresh); if every download fails and
+  nothing was ever read, the source fails (`upstream_unavailable`) instead of
+  serving an empty map. The subsource timeout is 90 s.
+- **TFR properties** — `notam`, `type` (the FAA's), `category` (`vip`,
+  `security`, `hazards`, `airshow`, `uas`, `space`, `special`, `other`),
+  `facility`, `state`, `description`, `location`, `regulation` (14 CFR section),
+  `area`, `areaIndex`, `areaCount`, `lowerFt`/`lowerRef`, `upperFt`/`upperRef`
+  (`AGL`, `MSL` or `FL`; an upper limit of 0 AGL is treated as unspecified),
+  `scheduled` (the area has a daily schedule: the card says to read the notice),
+  `effective`, `expire`, `text` (≤ 400 characters), `link`
+  (`https://tfr.faa.gov/tfr3/?page=detail_6_2117`), `timestamp` (= issue time).
+  Feature id `<notam>#<n>` (`tfr:6/2117#1` on the wire), n = the area's
+  position in the notice.
+- **Delays** — `https://nasstatus.faa.gov/api/airport-status-information`
+  (XML, ~1 to 20 KB). Read from the published DTD
+  (`https://nasstatus.faa.gov/AirportStatus.dtd`): `Ground_Stop_List/Program`
+  (`ARPT`, `Reason`, `End_Time` as a text clock like "3:15 pm EDT"),
+  `Ground_Delay_List/Ground_Delay` (`Avg`, `Max` as "1 hour and 30 minutes"),
+  `Arrival_Departure_Delay_List/Delay` (one or two `Arrival_Departure Type=…`
+  legs with `Min`, `Max`, `Trend`) and `Airport_Closure_List/Airport` (`Start`,
+  `Reopen`). **Caveat: only the closure list had a live payload on the day this
+  was built (a quiet day); the other three shapes were written from the DTD and
+  hand-written fixtures, and the parser is tolerant (by list and element name,
+  unknown lists such as CTOP and airspace flow ignored).** Closure windows
+  prefer the dates inside the NOTAM text (`2605271826-2705281600`, full year)
+  over the feed's year-less "May 27 at 18:26 UTC." (nearest year to now).
+  Durations become minutes.
+- **Airport positions** — the feed has FAA identifiers only.
+  `https://aviationweather.gov/api/data/airport?ids=KJFK,KEWR&format=json` (keyless;
+  204 when no id is known) is asked once per 40 airports with `K` + the FAA code,
+  or the ICAO code from a built-in table for Alaska, Hawaii, Puerto Rico, the
+  Virgin Islands and the Pacific territories (`HNL` → `PHNL`). A resolved
+  position is kept in server memory for 7 days, an unknown identifier for 1 day;
+  a failed lookup is never remembered as "unknown", and when delays exist but
+  nothing could be resolved the source fails rather than serve an empty map.
+  Airports with no position are not drawn (`unlocated` in the source status).
+- **Delay properties** — one point per airport (id = the FAA identifier,
+  `delays:JFK` on the wire): `airport`, `icao`, `name`, `delayType` (the most
+  severe program: `ground-stop` > `ground-delay` > `arrival-delay` >
+  `departure-delay` > `closure`; closures rank last on purpose, most entries in
+  the closure list are partial NOTAM closures such as "closed to general
+  aviation"), that program's own fields flattened (`reason`, `avg`, `max`,
+  `min`, `trend`, `endTime`, `start`, `reopen`), `programCount`, `programs`
+  (all of them), `link` (the NAS Status page) and `timestamp` (= the feed's
+  update time).
+- **Display** — TFRs are translucent areas, clamped to ground, colored by type
+  (VIP red, security orange, hazards yellow, air shows blue, UAS violet, space
+  cyan, special grey), fainter while only scheduled; delays are dots on the
+  ellipsoid, larger for worse programs (13, 12, 11, 11, 10 px). The row has a
+  chip per feed and a legend (TFR types, then delay programs, with counts). A
+  click opens a card (TFR: place, area, altitude limits, validity in UTC, CFR
+  section, notice excerpt; delay: airport name, every program, age) that
+  opens the FAA page.
+- **Caveats** — three upstream hosts, all keyless. Size: 84 areas in 150 KB of
+  features plus 5 airports; the route body is about 160 KB. The kit's user agent
+  is sent on every request. The airport table covers the airports the FAA lists
+  today; an unlisted territory airport is simply not drawn. Informational only:
+  the NOTAM text governs; not for flight planning. Voice: toggle only (no alias).

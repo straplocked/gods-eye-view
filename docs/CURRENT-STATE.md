@@ -3723,6 +3723,7 @@ its criteria cannot be silently ignored.
 | Volcanoes 🌋 (`volcanoes`) | Smithsonian GVP continuing eruptions (WFS) + USGS Volcano Hazards Program alert levels (elevated only); keyless, one point per volcano, a volcano in both feeds merged | `src/layers/volcanoes/` via `src/app/layers/volcanoes.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/volcanoes` (+ `/status`) | 10 min (server caches: GVP 6 h, USGS 10 min) |
 | Aurora & Space Weather 🌌 (`space-weather`) | NOAA SWPC OVATION aurora nowcast (1° grid traced into probability-band areas, 10 % and up) + latest planetary Kp / NOAA G-scale in the row and card; keyless | `src/layers/spaceWeather/` via `src/app/layers/spaceWeather.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/space-weather` (+ `/status`) | 5 min (server caches: aurora 5 min, Kp 15 min) |
 | Aviation Weather 🛩️ (`aviation-weather`) | NOAA AWC METARs worldwide (bulk cache file, points colored by flight category) + US and international SIGMET/AIRMET advisory areas by hazard; keyless | `src/layers/aviationWeather/` via `src/app/layers/aviationWeather.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/aviation-weather` (+ `/status`) | 5 min (server caches: metar, sigmet, isigmet 5 min each) |
+| Airspace Restrictions & Airport Delays 🚧 (`airspace`) | FAA Temporary Flight Restrictions (list + one XNOTAM download per TFR for the geometry; circles and arcs built into polygons) + FAA NAS Status airport delays (ground stops, ground delay programs, arrival/departure delays, closures) as points at AWC-resolved airport positions; keyless | `src/layers/airspace/` via `src/app/layers/airspace.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/airspace` (+ `/status`) | 5 min (server caches: tfr list 10 min and each TFR's geometry until it leaves the list, delays 5 min, airport positions 7 days) |
 | Weather & Tsunami Warnings ⛈️ (`weather-warnings`) | NWS active alerts (areas: the alert polygon, or the union of its NWS zones from a 7-day zone cache) + NOAA tsunami.gov bulletins (PAAQ, PHEB; one point each); keyless | `src/layers/weatherWarnings/` via `src/app/layers/weatherWarnings.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/weather-warnings` (+ `/status`) | 2 min (server caches: NWS 2 min, tsunami 5 min) |
 
 GNSS Integrity samples a 250 nm circle around the Earth point under the screen
@@ -3843,6 +3844,26 @@ date line). The kit gained one style option, `clampToGround: false`, so the
 METAR points sit on the ellipsoid instead of each tracking terrain height.
 Informational only: not an official weather briefing. Voice: toggle only (the
 Realtime prompt ceiling was raised to 52,300).
+
+Airspace Restrictions & Airport Delays (`airspace`, layer token `00`, the first
+two-character token) is the sixth layer on the kit. The `tfr` subsource reads
+the FAA's TFR list (`exportTfrList`, about 76 entries, no geometry) and then
+one keyless XNOTAM download per TFR (`/download/detail_<notam>.xml`, four at a
+time) for the outline, altitude limits and times: the FAA's merged polygon when
+it has one, else a polygon built from the original shapes (circles with a radius
+in nautical miles, clockwise and counter-clockwise arcs, vertex lists). One
+area feature per restricted area of a NOTAM, colored by type; a TFR's geometry
+is kept until it leaves the list (so a 10-minute refresh is one list request),
+re-read when its list entry changes or after 6 hours. Nationwide notices and
+the border TFRs carry no geometry and are not drawn (15 of 76 in the live
+sample); they are counted in the source status. The `delays` subsource reads
+the FAA NAS Status XML and draws one dot per airport with ground stops, ground
+delay programs, arrival/departure delays or closures, colored by the most
+severe program; FAA airport identifiers are resolved to positions through the
+AWC airport lookup (`K` + the FAA code, or a small code table for Alaska,
+Hawaii and the territories) and cached for 7 days in server memory. Informational
+only: not for flight planning; the NOTAM text governs. Voice: toggle only (the
+Realtime prompt ceiling was raised to 52,350).
 
 Street Level is a docked, collapsible right-rail panel (`#street-level-panel`,
 layer token `0`, option owner `street-level`, panel `ui` token `t`) that starts

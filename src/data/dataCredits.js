@@ -215,6 +215,12 @@ export const DATA_CREDITS = [
       'METARs and SIGMETs: ' +
       '<a href="https://aviationweather.gov/" target="_blank" rel="noopener">NOAA Aviation Weather Center</a>',
   },
+  {
+    key: 'faa-airspace',
+    html:
+      'Flight restrictions and airport delays: ' +
+      '<a href="https://tfr.faa.gov/" target="_blank" rel="noopener">FAA</a>',
+  },
   OSM_CREDIT,
   OPENMAPTILES_CREDIT,
   {
