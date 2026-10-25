@@ -3722,6 +3722,7 @@ its criteria cannot be silently ignored.
 | Global Hazards ⚠️ (`global-hazards`) | GDACS current events (EQ, TC, FL, VO, DR, WF; one MAP list per type) + NASA EONET open events (30 days); keyless, one point (or EONET area) per event | `src/layers/globalHazards/` via `src/app/layers/globalHazards.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/global-hazards` (+ `/status`) | 15 min (server caches: GDACS 15 min, EONET 30 min) |
 | Volcanoes 🌋 (`volcanoes`) | Smithsonian GVP continuing eruptions (WFS) + USGS Volcano Hazards Program alert levels (elevated only); keyless, one point per volcano, a volcano in both feeds merged | `src/layers/volcanoes/` via `src/app/layers/volcanoes.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/volcanoes` (+ `/status`) | 10 min (server caches: GVP 6 h, USGS 10 min) |
 | Aurora & Space Weather 🌌 (`space-weather`) | NOAA SWPC OVATION aurora nowcast (1° grid traced into probability-band areas, 10 % and up) + latest planetary Kp / NOAA G-scale in the row and card; keyless | `src/layers/spaceWeather/` via `src/app/layers/spaceWeather.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/space-weather` (+ `/status`) | 5 min (server caches: aurora 5 min, Kp 15 min) |
+| Aviation Weather 🛩️ (`aviation-weather`) | NOAA AWC METARs worldwide (bulk cache file, points colored by flight category) + US and international SIGMET/AIRMET advisory areas by hazard; keyless | `src/layers/aviationWeather/` via `src/app/layers/aviationWeather.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/aviation-weather` (+ `/status`) | 5 min (server caches: metar, sigmet, isigmet 5 min each) |
 | Weather & Tsunami Warnings ⛈️ (`weather-warnings`) | NWS active alerts (areas: the alert polygon, or the union of its NWS zones from a 7-day zone cache) + NOAA tsunami.gov bulletins (PAAQ, PHEB; one point each); keyless | `src/layers/weatherWarnings/` via `src/app/layers/weatherWarnings.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/weather-warnings` (+ `/status`) | 2 min (server caches: NWS 2 min, tsunami 5 min) |
 
 GNSS Integrity samples a 250 nm circle around the Earth point under the screen
@@ -3825,6 +3826,23 @@ its latest value, interval, NOAA G-level and 24-hour peak ride in
 geomagnetic storm" (the kit's new `rowInfo` hook). Both feeds are informational
 model and index output; the aurora grid is a nowcast of probability, not a
 report of what is visible. Voice: toggle only ("aurora").
+
+Aviation Weather (`aviation-weather`, layer token `9`, the last single-character
+token) is the fifth layer on the kit and the first with thousands of points. The
+`metar` subsource reads AWC's bulk cache file (`metars.cache.csv.gz`, gunzipped
+under a 2 MiB compressed and 16 MiB decoded cap) and serves one point per
+station: about 5,100 stations, a 2.1 MB route body (about 290 KB gzipped; the dev
+and preview servers do not compress). Each point is colored by flight category
+(the CSV value, or derived from ceiling and visibility with the FAA thresholds
+when it is missing; grey when no visibility is reported) and is a click card of
+wind, visibility, ceiling, temperature, altimeter, age and the raw report. The
+`sigmet` (US SIGMET and AIRMET) and `isigmet` (international SIGMET) subsources
+read AWC's GeoJSON advisories as areas colored by hazard; rings are closed and
+longitudes folded into -180..180 (the international feed uses 0..360 across the
+date line). The kit gained one style option, `clampToGround: false`, so the
+METAR points sit on the ellipsoid instead of each tracking terrain height.
+Informational only: not an official weather briefing. Voice: toggle only (the
+Realtime prompt ceiling was raised to 52,300).
 
 Street Level is a docked, collapsible right-rail panel (`#street-level-panel`,
 layer token `0`, option owner `street-level`, panel `ui` token `t`) that starts

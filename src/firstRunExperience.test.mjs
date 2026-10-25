@@ -1013,11 +1013,11 @@ test('the voice TOOL SCHEMA matches the pinned contract — the mission mapping 
   // Restore the base camera/Globe View wording with the globe-rotation append.
   // Global Hazards (the first keyless-feed layer) extends the manifest;
   // Weather & Tsunami Warnings adds a toggle-only entry; Volcanoes adds another;
-  // Aurora & Space Weather adds a fourth.
-  assert.equal(block.length, 31155, 'serialized tool schema length drifted');
+  // Aurora & Space Weather adds a fourth; Aviation Weather adds a fifth.
+  assert.equal(block.length, 31193, 'serialized tool schema length drifted');
   assert.equal(
     crypto.createHash('sha256').update(block).digest('hex'),
-    'efa6504ee6d60a6ea94d3017b9799ba5b7a1d14bd1b3d642307b79880a746a34',
+    '0289e168db4112dd089bbf6dca174cdb56cb4bf61d039e7ec8a60d8dea3911fb',
     'the first-run missions must ride EXISTING tools: no schema edit, no cache bust',
   );
   const instructions = fs.readFileSync(

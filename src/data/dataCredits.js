@@ -209,6 +209,12 @@ export const DATA_CREDITS = [
       'Aurora and Kp index: ' +
       '<a href="https://www.swpc.noaa.gov/" target="_blank" rel="noopener">NOAA Space Weather Prediction Center</a>',
   },
+  {
+    key: 'awc-aviation-weather',
+    html:
+      'METARs and SIGMETs: ' +
+      '<a href="https://aviationweather.gov/" target="_blank" rel="noopener">NOAA Aviation Weather Center</a>',
+  },
   OSM_CREDIT,
   OPENMAPTILES_CREDIT,
   {

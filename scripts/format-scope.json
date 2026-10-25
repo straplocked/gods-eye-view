@@ -1119,5 +1119,11 @@
   "src/layers/spaceWeather/source.test.mjs",
   "src/layers/spaceWeather/cards.test.mjs",
   "src/layers/spaceWeather/ownership.test.mjs",
-  "src/testSupport/spaceWeatherFixtures.mjs"
+  "src/testSupport/spaceWeatherFixtures.mjs",
+  "src/data/aviationWeatherProxy.test.mjs",
+  "src/layers/aviationWeather/records.test.mjs",
+  "src/layers/aviationWeather/source.test.mjs",
+  "src/layers/aviationWeather/cards.test.mjs",
+  "src/layers/aviationWeather/ownership.test.mjs",
+  "src/testSupport/aviationWeatherFixtures.mjs"
 ]

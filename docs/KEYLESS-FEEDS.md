@@ -172,6 +172,10 @@ createKeylessFeatureLayer({
   are a translucent fill plus a clamped outline. Entities are rebuilt in one
   suspended batch and only when the snapshot changed; nothing runs per frame,
   so the render governor needs no hold.
+- A style with `clampToGround: false` draws points on the ellipsoid instead of
+  clamping each one to terrain; Aviation Weather uses it for its ~5,000 METAR
+  points (the depth test is already disabled for points, so they still draw
+  over terrain).
 - Optional hooks for a layer whose second feed carries no geometry (Aurora &
   Space Weather): `rowInfo(metadata, nowMs)` returns a line shown under the
   Layers panel row (`info`/`infoTitle` in the row controls), `card` and `legend`
@@ -256,6 +260,12 @@ Read the Global Hazards files as the worked example.
     the "aurora" alias would have cost 22 more and was dropped rather than
     raising the ceiling again. One character is spare, so the next layer must
     choose: voice-off, trimming elsewhere, or a new budget.
+    Aviation Weather is a toggle with no alias and costs 38 (52,287; its long
+    id sits in two enums). It also took the "new budget" route: the ceiling is
+    now 52,300, 13 spare, rather than making a pilot-facing layer voice-off.
+    Token `9` was the last single character; the next layer gets `00`, and the
+    frontier values in the token tests move to `00`/`01` (digits are exhausted,
+    so the digit fixtures in those tests are empty or removed).
 11. **Tests**: `records.test.mjs` on hand-written fixtures (valid output via
     `assertValidFeatureCollection`), a proxy test (both hooks, TTL, stale on
     error, byte cap, sanitized 502, no cached empty snapshot, single flight,
@@ -267,12 +277,13 @@ Read the Global Hazards files as the worked example.
 
 ## Keyless layers
 
-| Layer id           | Name                       | Subsources (TTL)                   | Route                             | Notes                              |
-| ------------------ | -------------------------- | ---------------------------------- | --------------------------------- | ---------------------------------- |
-| `global-hazards`   | Global Hazards             | `gdacs` (15 min), `eonet` (30 min) | `/api/v1/layers/global-hazards`   | First layer on the kit             |
-| `weather-warnings` | Weather & Tsunami Warnings | `nws` (2 min), `tsunami` (5 min)   | `/api/v1/layers/weather-warnings` | NWS zone cache fills progressively |
-| `volcanoes`        | Volcanoes                  | `gvp` (6 h), `usgs` (10 min)       | `/api/v1/layers/volcanoes`        | Joins a volcano in both feeds      |
-| `space-weather`    | Aurora & Space Weather     | `aurora` (5 min), `kp` (15 min)    | `/api/v1/layers/space-weather`    | Kp rides in metadata, no features  |
+| Layer id           | Name                       | Subsources (TTL)                          | Route                             | Notes                              |
+| ------------------ | -------------------------- | ----------------------------------------- | --------------------------------- | ---------------------------------- |
+| `global-hazards`   | Global Hazards             | `gdacs` (15 min), `eonet` (30 min)        | `/api/v1/layers/global-hazards`   | First layer on the kit             |
+| `weather-warnings` | Weather & Tsunami Warnings | `nws` (2 min), `tsunami` (5 min)          | `/api/v1/layers/weather-warnings` | NWS zone cache fills progressively |
+| `volcanoes`        | Volcanoes                  | `gvp` (6 h), `usgs` (10 min)              | `/api/v1/layers/volcanoes`        | Joins a volcano in both feeds      |
+| `space-weather`    | Aurora & Space Weather     | `aurora` (5 min), `kp` (15 min)           | `/api/v1/layers/space-weather`    | Kp rides in metadata, no features  |
+| `aviation-weather` | Aviation Weather           | `metar`, `sigmet`, `isigmet` (5 min each) | `/api/v1/layers/aviation-weather` | About 5,100 METAR points, 2 MB     |
 
 ### Global Hazards (`global-hazards`, token `5`)
 
@@ -496,3 +507,79 @@ kpMax24h}` (`kpMax24h` = highest of the 8 latest rows) next to the kit's own
   update on different clocks, so a card's Kp can be a few hours older than the
   bands. Informational, not for safety-critical use. Voice: toggle only (no
   alias).
+
+### Aviation Weather (`aviation-weather`, token `9`)
+
+- **METAR** — `https://aviationweather.gov/data/cache/metars.cache.csv.gz`, the
+  bulk file AWC asks heavy users to read instead of bounding-box queries (about
+  250 KB gzip, 1 MB of CSV, 5,121 rows in a live sample; refreshed about every
+  minute, our TTL is 5 min). It is served as `application/octet-stream`, so the
+  kit's `fetchText(url, {gzip: 'auto'})` gunzips it (2 MiB compressed cap, 16 MiB
+  decoded cap, so a small gzip bomb is refused). The CSV has 44 columns with
+  `sky_cover`/`cloud_base_ft_agl` repeated four times; the header row is found
+  by its `raw_text` first column (notice lines before it are tolerated) and
+  fields are parsed per RFC 4180 (3 of 5,121 raw reports contain commas).
+  Feature id = ICAO station id (`metar:KSEA` on the wire); a station listed
+  twice keeps the newest observation. Skipped: no station id, bad time, an
+  observation over 3 hours old, non-finite or out-of-range position, exactly
+  0,0, and AWC's missing-position sentinel (-99.99, -99.99; 22 rows in the
+  sample). A file with no header, a missing required column or no usable station
+  (including one that has gone entirely stale) is a corrupt payload: the last
+  good map is served flagged stale instead of an empty one.
+- **Flight category** — the CSV `flight_category` when it is VFR, MVFR, IFR or
+  LIFR. 388 of 5,121 rows carry the literal text `null` (every one of them has
+  no visibility); where a category is missing and visibility is known it is
+  derived with the FAA thresholds: the worse of ceiling (lowest BKN/OVC/OVX
+  layer, feet AGL) and visibility wins; LIFR below 500 ft or 1 mi, IFR below
+  1,000 ft or 3 mi, MVFR up to 3,000 ft or 5 mi, else VFR. Checked against the
+  4,733 rows of the sample that have both a category and a visibility: 0
+  disagreements. With visibility unknown the category stays `null` (grey)
+  rather than guessing from the ceiling alone. `vert_vis_ft` is ignored: the
+  sample reports it in hundreds of feet while the sky columns already carry the
+  vertical-visibility layer as OVX.
+- **METAR properties** — `station`, `category`, `type` (only `SPECI`), `wdir`,
+  `wspd`, `wgst` (kt), `vis` (statute miles; `visPlus: true` for "10+"),
+  `ceiling` (ft AGL), `temp`, `dew` (°C), `altim` (inHg), `wx`, `raw` (≤ 400
+  characters), `timestamp` (= observation time). Optional properties are omitted
+  when absent to keep the body small. Measured: 5,047 stations, 1.94 MB of
+  features (about 385 bytes each including the kit's `layer`/`source`
+  stamps); the whole route 2.1 MB, 291 KB gzipped. The client reads up to 8 MiB.
+- **SIGMET / AIRMET** — `https://aviationweather.gov/api/data/airsigmet?format=geojson`
+  (US; the live sample had 6 convective SIGMETs and no AIRMETs, `severity` 5,
+  `altitudeLow1/2`, `altitudeHi1/2`, `rawAirSigmet`) and
+  `https://aviationweather.gov/api/data/isigmet?format=geojson` (international;
+  181 in a live sample: TS 76, TURB 55, ICE 21, VA 17, MTW 8, TC 4, with
+  `firId`, `firName`, `qualifier`, `base`, `top`, `chng`, `rawSigmet`).
+  An empty answer is a 200 with an empty FeatureCollection and is cached like
+  any snapshot. Polygon and MultiPolygon only; open rings are closed (the first
+  sample had 20) and longitudes above 180 are folded (`193.167` → `-166.833`;
+  three FIRs used 0..360 across the date line). Edges are not split at the
+  antimeridian (the RFC asks for that; the globe draws great-circle edges in 3D
+  and the shared validator does not check it). Unusable rings drop their
+  polygon, bad holes are dropped, an advisory past its `validTimeTo` is skipped.
+  Properties: `advisory` (`sigmet`/`airmet`), `hazard` (CONVECTIVE, TS, TURB,
+  ICE, VA, TC, MTW, IFR, MTN OBSCN, …), `qualifier` (SEV, EMBD, FRQ, or the
+  volcano/cyclone name), `severity` (US only), `fir`, `firName`, `base`, `top`
+  (feet), `change`, `issuer`, `series`, `validFrom`, `validTo`, `raw` (≤ 1,500
+  characters), `timestamp` (= `validFrom`). Movement is not structured: the US
+  `movementDir` is a "moving from" bearing while the international `dir` is a
+  "moving toward" compass point, so the raw text is shown instead of mixing them.
+  Feature ids are `<advisory>-<issuer>-<series>-<hazard>-<validFrom>` with `-2`,
+  `-3` for exact repeats (OIII series 03 appears twice in the sample). Size: about
+  150 KB for 177 international advisories.
+- **Why three subsources** — `metar`, `sigmet` (US) and `isigmet`: a failing
+  endpoint does not hide the others, each has its own chip, and the US feed is
+  usually empty or tiny while the international one is not.
+- **Display** — METARs are small dots on the ellipsoid, larger for IFR/LIFR (5,
+  6, 8, 9 px), standard chart colors; advisories are translucent fills with an
+  outline in the hazard color (AIRMETs lighter). The Layers row has a chip per
+  feed and a legend (flight categories worst first with counts, then the
+  hazards present). A click opens a card (METAR: wind, visibility, ceiling,
+  temperature, dew point, altimeter, weather, age, raw report; advisory: hazard,
+  qualifier, advisory and issuer, FIR, altitude range as FL or feet, validity in
+  UTC, trend and the advisory text) that opens aviationweather.gov on click.
+- **Caveats** — AWC asks for fewer than 100 requests a minute; the layer makes
+  three requests per 5 minutes per server regardless of viewers. Station names
+  are not in the CSV (AWC's stations file is a separate download), so cards use
+  the ICAO id. Polygons approximate the issued text. Informational only: not an
+  official briefing or for flight planning. Voice: toggle only (no alias).

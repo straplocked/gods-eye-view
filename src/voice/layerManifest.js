@@ -257,6 +257,12 @@ const layers = [
     noQuery: 'aurora bands; no countable records',
   },
   {
+    id: 'aviation-weather',
+    aliases: [],
+    context: false,
+    noQuery: 'METAR points and advisory areas',
+  },
+  {
     id: 'weather-cyclones',
     aliases: ['cyclones', 'hurricanes', 'typhoons', 'tropical storms'],
     context: false,

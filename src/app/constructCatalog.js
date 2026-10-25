@@ -31,6 +31,7 @@ import { createApplicationGlobalHazards } from './layers/globalHazards.js';
 import { createApplicationWeatherWarnings } from './layers/weatherWarnings.js';
 import { createApplicationVolcanoes } from './layers/volcanoes.js';
 import { createApplicationSpaceWeather } from './layers/spaceWeather.js';
+import { createApplicationAviationWeather } from './layers/aviationWeather.js';
 import { createApplicationCables } from './layers/submarineCables.js';
 import { createApplicationStreetLevel } from './layers/streetLevel.js';
 import { createInfrastructureLayers } from '../data/infrastructure.js';
@@ -138,6 +139,9 @@ export function createApplicationCatalog({
         }),
         createApplicationVolcanoes({ source: sources.volcanoes }),
         createApplicationSpaceWeather({ source: sources['space-weather'] }),
+        createApplicationAviationWeather({
+          source: sources['aviation-weather'],
+        }),
         createApplicationAlpr({ surface, source: sources.alpr }),
         createApplicationStreetLevel({
           surface,

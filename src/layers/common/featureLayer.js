@@ -37,6 +37,7 @@ const DEFAULT_STYLE = Object.freeze({
   fillAlpha: 0.25,
   lineWidth: 2,
   outline: true,
+  clampToGround: true,
 });
 
 const toCartesian = ([lon, lat]) => Cesium.Cartesian3.fromDegrees(lon, lat);
@@ -47,7 +48,13 @@ function pointGraphics(style, color) {
     color,
     outlineColor: Cesium.Color.fromCssColorString(style.outlineColor),
     outlineWidth: style.outlineWidth,
-    heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+    // A point that is not clamped sits on the ellipsoid; with the depth test
+    // disabled below it still draws over terrain. Thousands of clamped points
+    // (Aviation Weather's METARs) would each track terrain height updates.
+    heightReference:
+      style.clampToGround === false
+        ? Cesium.HeightReference.NONE
+        : Cesium.HeightReference.CLAMP_TO_GROUND,
     disableDepthTestDistance: Number.POSITIVE_INFINITY,
   };
 }
@@ -140,7 +147,7 @@ function geometryParts(geometry, style, color) {
  * @param {string} options.sourceName - English source label for the panel row.
  * @param {{getSnapshot: Function}} options.source - Resolves `{features, metadata}`.
  * @param {Array<{id: string, label: string, title?: string, chip?: boolean}>} [options.subsources] - Row chips; labels are English msg() keys. `chip: false` keeps the name for the "feed unavailable" status without a toggle (a feed with no features of its own).
- * @param {(feature: Object) => Object} [options.style] - `{color, outlineColor, pixelSize, outlineWidth, fillAlpha, lineWidth, outline}` (CSS colors; `outline: false` draws areas without an outline).
+ * @param {(feature: Object) => Object} [options.style] - `{color, outlineColor, pixelSize, outlineWidth, fillAlpha, lineWidth, outline}` (CSS colors; `outline: false` draws areas without an outline; `clampToGround: false` draws points on the ellipsoid instead of tracking terrain, for layers with thousands of points).
  * @param {(feature: Object, nowMs: number, metadata: ?Object) => {title: string, details: string[], accent: string, link?: string}} options.card - `metadata` is the latest response's `metadata` member.
  * @param {(features: Array<Object>, metadata: ?Object) => Array<Object>} [options.legend] - Panel legend rows for the visible features.
  * @param {(metadata: ?Object, nowMs: number) => ?{text: string, title?: string}} [options.rowInfo] - A line under the panel row built from the response `metadata` (Aurora & Space Weather shows the latest Kp); null hides it.
