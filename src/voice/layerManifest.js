@@ -245,6 +245,12 @@ const layers = [
     noQuery: 'area alerts; no countable records',
   },
   {
+    id: 'volcanoes',
+    aliases: [],
+    context: false,
+    noQuery: 'one point per volcano; no countable records',
+  },
+  {
     id: 'weather-cyclones',
     aliases: ['cyclones', 'hurricanes', 'typhoons', 'tropical storms'],
     context: false,

@@ -191,6 +191,18 @@ export const DATA_CREDITS = [
       'Tsunami bulletins: ' +
       '<a href="https://www.tsunami.gov/" target="_blank" rel="noopener">NOAA / NWS Tsunami Warning Centers</a>',
   },
+  {
+    key: 'gvp-volcanoes',
+    html:
+      'Volcanic eruptions: ' +
+      '<a href="https://volcano.si.edu/" target="_blank" rel="noopener">Smithsonian Institution, Global Volcanism Program</a>',
+  },
+  {
+    key: 'usgs-volcanoes',
+    html:
+      'Volcano alert levels: ' +
+      '<a href="https://www.usgs.gov/programs/VHP" target="_blank" rel="noopener">USGS Volcano Hazards Program</a>',
+  },
   OSM_CREDIT,
   OPENMAPTILES_CREDIT,
   {

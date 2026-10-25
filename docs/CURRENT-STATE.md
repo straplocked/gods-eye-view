@@ -3720,6 +3720,7 @@ its criteria cannot be silently ignored.
 | GNSS Integrity 📡 (`gnss-integrity`) | adsb.lol point snapshot, low navigation accuracy binned per 0.5° cell (GEV NIC/NACp threshold + gpsjam.org formula and bands, keyless, ODbL) | `src/layers/gnss/` via `src/app/layers/gnss.js` | `/api/gnss-integrity` | camera-driven (600 ms debounce, minimum 2.5 s between reads) + 60s poll (server cache 60 s; 30 min rolling window) |
 | Fire Perimeters 🔥 | NIFC WFIGS current interagency perimeters (keyless, paged past the 2000-record cap); InciWeb catalog + incident page origin and update time checks for verified incident-page links | `src/layers/perimeters/` via `src/app/layers/perimeters.js` | `/api/fire-perimeters` + `/api/fire-perimeters/inciweb/*` | 5 min (server caches: catalog 1 h; publication 30 min) |
 | Global Hazards ⚠️ (`global-hazards`) | GDACS current events (EQ, TC, FL, VO, DR, WF; one MAP list per type) + NASA EONET open events (30 days); keyless, one point (or EONET area) per event | `src/layers/globalHazards/` via `src/app/layers/globalHazards.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/global-hazards` (+ `/status`) | 15 min (server caches: GDACS 15 min, EONET 30 min) |
+| Volcanoes 🌋 (`volcanoes`) | Smithsonian GVP continuing eruptions (WFS) + USGS Volcano Hazards Program alert levels (elevated only); keyless, one point per volcano, a volcano in both feeds merged | `src/layers/volcanoes/` via `src/app/layers/volcanoes.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/volcanoes` (+ `/status`) | 10 min (server caches: GVP 6 h, USGS 10 min) |
 | Weather & Tsunami Warnings ⛈️ (`weather-warnings`) | NWS active alerts (areas: the alert polygon, or the union of its NWS zones from a 7-day zone cache) + NOAA tsunami.gov bulletins (PAAQ, PHEB; one point each); keyless | `src/layers/weatherWarnings/` via `src/app/layers/weatherWarnings.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/weather-warnings` (+ `/status`) | 2 min (server caches: NWS 2 min, tsunami 5 min) |
 
 GNSS Integrity samples a 250 nm circle around the Earth point under the screen
@@ -3785,6 +3786,26 @@ card (event, severity, urgency, area, onset/expiry, issuing office) that opens
 the weather.gov or tsunami.gov link. Voice: toggle only ("weather warnings",
 "tsunami"); analyst queries were left out to stay inside the voice prompt
 budget.
+
+Volcanoes (`volcanoes`, layer token `7`) is the third layer on that kit and the
+first whose subsources describe the same things. The `gvp` subsource reads the
+Smithsonian GVP WFS for eruptions still marked continuing (one point per
+volcano; with several open records the latest start wins) and the `usgs`
+subsource reads the USGS Volcano Hazards Program status list, kept to volcanoes
+at advisory, watch or warning level. The kit's new `combine` step then joins
+the two by volcano number on the proxy response: a volcano in both is one
+`source: 'gvp+usgs'` feature carrying the USGS alert level, aviation color code
+and notice together with the GVP eruption start and VEI, under the stable id
+`volcano:<vnum>` whichever feeds supply it. The fill is the USGS aviation color
+code when there is one, otherwise purple for a GVP-only eruption; a white ring
+marks a continuing eruption and the size follows the VEI or the alert level. A
+click opens a card (eruption, alert level and code, observatory, synopsis,
+start, age) that opens the USGS page, or GVP's when there is none. The two
+chips filter by feed; a merged volcano stays visible until both are off. The
+GVP list changes by hand a few times a day (6 h cache); USGS answers 404 to a
+User-Agent that carries a URL, so that one request sends the bare
+`GodsEyeView/fork`. Voice: toggle only (the prompt-size ceiling was raised by
+50 characters for it).
 
 Street Level is a docked, collapsible right-rail panel (`#street-level-panel`,
 layer token `0`, option owner `street-level`, panel `ui` token `t`) that starts

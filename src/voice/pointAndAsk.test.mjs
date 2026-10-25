@@ -352,8 +352,13 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // decision rather than another silent raise (docs/KEYLESS-FEEDS.md).
   // Weather & Tsunami Warnings took that decision: toggle-only (noQuery) with
   // two aliases, which fits under this ceiling without raising it.
+  // Volcanoes is the third keyless layer and the first that does not fit: even
+  // a toggle-only entry with no alias costs 24 characters (52,217) against 7
+  // spare. Decision: raise the ceiling by 50 to 52,250 so the layer keeps a
+  // voice toggle, rather than making it voice-off; the next keyless layer
+  // starts from 33 spare and has the same decision to make.
   const size = instructions.length + JSON.stringify(GEV_REALTIME_TOOLS).length;
-  assert.ok(size <= 52200, `prompt size ${size}`);
+  assert.ok(size <= 52250, `prompt size ${size}`);
 });
 
 

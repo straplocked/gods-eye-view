@@ -73,6 +73,7 @@ const PANEL_GROUPS = [
       'local-firms',
       'fire-perimeters',
       'global-hazards',
+      'volcanoes',
       'gnss-integrity',
     ],
   },

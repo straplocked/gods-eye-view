@@ -396,3 +396,146 @@ test('error codes are fixed and client-safe', () => {
     'upstream_unavailable',
   );
 });
+
+test('combine joins the served subsources into the response features', async () => {
+  const seen = [];
+  const request = install({
+    now: () => 0,
+    combine(features) {
+      seen.push(features.map((feature) => feature.id));
+      const keys = new Map();
+      for (const feature of features) {
+        const key = feature.id.split(':')[1];
+        const entry = keys.get(key) || [];
+        entry.push(feature.properties.source);
+        keys.set(key, entry);
+      }
+      return [...keys].map(([key, sources]) => ({
+        type: 'Feature',
+        id: `joined:${key}`,
+        geometry: point(key).geometry,
+        properties: {
+          layer: 'test-layer',
+          source: sources.join('+'),
+          timestamp: null,
+        },
+      }));
+    },
+    subsources: [
+      { id: 'alpha', fetchSnapshot: async () => fc(point('x'), point('y')) },
+      { id: 'beta', fetchSnapshot: async () => fc(point('x')) },
+    ],
+  });
+  const res = await request();
+  assert.equal(res.status, 200);
+  assertValidKeylessLayerCollection(res.body, 'test-layer');
+  // combine sees the stamped, prefixed features of every served subsource.
+  assert.deepEqual(seen, [['alpha:x', 'alpha:y', 'beta:x']]);
+  assert.deepEqual(
+    res.body.features.map((f) => [f.id, f.properties.source]),
+    [
+      ['joined:x', 'alpha+beta'],
+      ['joined:y', 'alpha'],
+    ],
+  );
+  // Metadata still reports each subsource's own feature count.
+  assert.deepEqual(
+    res.body.metadata.sources.map(({ id, count }) => [id, count]),
+    [
+      ['alpha', 2],
+      ['beta', 1],
+    ],
+  );
+});
+
+test('combine runs on what is served: one failing subsource still combines the rest', async () => {
+  const request = install({
+    now: () => 0,
+    combine: (features) => features.map((f) => ({ ...f, id: `c:${f.id}` })),
+    subsources: [
+      { id: 'alpha', fetchSnapshot: async () => fc(point('x')) },
+      {
+        id: 'beta',
+        fetchSnapshot: async () => {
+          throw invalidPayload('broken');
+        },
+      },
+    ],
+  });
+  const res = await request();
+  assert.equal(res.status, 200);
+  assert.deepEqual(
+    res.body.features.map((f) => f.id),
+    ['c:alpha:x'],
+  );
+  assert.equal(res.body.metadata.partial, true);
+});
+
+test('a combine result that breaks the contract answers a sanitized 502', async () => {
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    for (const combine of [
+      // Duplicate ids.
+      (features) => [features[0], features[0]],
+      // Wrong layer.
+      (features) => [
+        {
+          ...features[0],
+          properties: { ...features[0].properties, layer: 'x' },
+        },
+      ],
+      // Not a list.
+      () => null,
+      // Throws.
+      () => {
+        throw new Error('private detail');
+      },
+    ]) {
+      const request = install({
+        combine,
+        subsources: [
+          { id: 'alpha', fetchSnapshot: async () => fc(point('x')) },
+        ],
+      });
+      const res = await request();
+      assert.equal(res.status, 502);
+      assert.deepEqual(res.body, { error: 'test_layer_unavailable' });
+    }
+  } finally {
+    console.warn = warn;
+  }
+  assert.throws(
+    () =>
+      createKeylessFeedProxy({
+        name: 'x',
+        layerId: 'x',
+        combine: 'nope',
+        subsources: [{ id: 'a', fetchSnapshot: async () => fc() }],
+      }),
+    TypeError,
+  );
+});
+
+test('a request can override the kit User-Agent for one upstream', async () => {
+  const agents = [];
+  const request = install({
+    fetchImpl: async (url, init) => {
+      agents.push(init.headers['User-Agent']);
+      return Response.json(fc(point('x')));
+    },
+    subsources: [
+      {
+        id: 'alpha',
+        fetchSnapshot: async ({ fetchJson }) => {
+          await fetchJson('https://a.example/default');
+          return fetchJson('https://a.example/override', {
+            headers: { 'User-Agent': 'Bare/1' },
+          });
+        },
+      },
+    ],
+  });
+  assert.equal((await request()).status, 200);
+  assert.deepEqual(agents, [KEYLESS_FEED_USER_AGENT, 'Bare/1']);
+});

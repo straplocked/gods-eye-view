@@ -87,22 +87,37 @@ export function featureAnchor(geometry) {
 }
 
 /**
- * Features whose subsource the viewer has not switched off.
+ * Subsource ids behind a feature. A layer that joins one entity reported by
+ * several feeds (Volcanoes: `gvp+usgs`) writes them joined with `+`.
+ * @param {Object} feature - Server feature (properties.source set).
+ * @returns {string[]}
+ */
+export function featureSources(feature) {
+  const source = feature?.properties?.source;
+  return typeof source === 'string' ? source.split('+') : [];
+}
+
+/**
+ * Features whose subsource the viewer has not switched off. A joined feature
+ * stays until every feed behind it is switched off.
  * @param {Array<Object>} features - Server features (properties.source set).
  * @param {Set<string>} hidden - Subsource ids switched off in the row.
  * @returns {Array<Object>}
  */
 export function visibleFeatures(features, hidden) {
   if (!hidden.size) return features;
-  return features.filter((feature) => !hidden.has(feature.properties?.source));
+  return features.filter((feature) => {
+    const sources = featureSources(feature);
+    return !sources.length || sources.some((source) => !hidden.has(source));
+  });
 }
 
-/** Count features per subsource id. */
+/** Count features per subsource id; a joined feature counts for each feed. */
 export function countBySource(features) {
   const counts = new Map();
   for (const feature of features) {
-    const source = feature.properties?.source;
-    counts.set(source, (counts.get(source) || 0) + 1);
+    for (const source of featureSources(feature))
+      counts.set(source, (counts.get(source) || 0) + 1);
   }
   return counts;
 }

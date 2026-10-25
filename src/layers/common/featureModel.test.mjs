@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  featureSources,
   countBySource,
   featureAnchor,
   partialFeedError,
@@ -96,6 +97,32 @@ test('subsource filtering, counts and chips', () => {
   );
   chips[1].onClick();
   assert.deepEqual(toggled, ['b']);
+});
+
+test('a joined feature (source "a+b") shows until every feed behind it is hidden', () => {
+  const features = [
+    { properties: { source: 'a+b' } },
+    { properties: { source: 'a' } },
+    { properties: { source: 'b' } },
+    { properties: {} },
+  ];
+  assert.deepEqual(featureSources(features[0]), ['a', 'b']);
+  assert.deepEqual(featureSources(features[1]), ['a']);
+  assert.deepEqual(featureSources(features[3]), []);
+  assert.deepEqual(featureSources(null), []);
+  const shown = (hidden) =>
+    visibleFeatures(features, new Set(hidden)).map((f) => f.properties.source);
+  assert.deepEqual(shown(['a']), ['a+b', 'b', undefined]);
+  assert.deepEqual(shown(['b']), ['a+b', 'a', undefined]);
+  assert.deepEqual(shown(['a', 'b']), [undefined]);
+  // A joined feature counts toward each of its feeds; sourceless ones toward none.
+  assert.deepEqual(
+    [...countBySource(features)],
+    [
+      ['a', 2],
+      ['b', 2],
+    ],
+  );
 });
 
 test('partial feed errors name the one missing feed', () => {

@@ -28,6 +28,7 @@ import { firePerimetersProxy } from './firePerimeters.js';
 import { gnssIntegrityProxy } from './gnssIntegrity.js';
 import { globalHazardsProxy } from './globalHazards.js';
 import { weatherWarningsProxy } from './weatherWarnings.js';
+import { volcanoesProxy } from './volcanoes.js';
 import { cycloneProxy } from './cyclones.js';
 import { windProxy } from './wind.js';
 
@@ -68,6 +69,7 @@ function localProviderPlugins({ realtime, gemini } = {}) {
     gnssIntegrityProxy(),
     globalHazardsProxy(),
     weatherWarningsProxy(),
+    volcanoesProxy(),
     keySetupEndpoint(),
   ];
 }

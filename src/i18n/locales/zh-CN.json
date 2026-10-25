@@ -2861,5 +2861,21 @@
   "Weather alert": "天气预警",
   "Areas are US National Weather Service alerts colored by severity; dots are NOAA tsunami bulletins colored by level. Alerts whose zone boundaries are still loading appear on a later refresh. Not for life-safety decisions.": "区域为美国国家气象局预警，按严重程度着色；圆点为 NOAA 海啸公告，按级别着色。区域边界仍在加载的预警会在之后的刷新中显示。不可用于生命安全决策。",
   "Weather & Tsunami Warnings": "天气与海啸预警",
-  "NWS": "NWS"
+  "NWS": "NWS",
+  "Yellow": "黄色",
+  "Orange": "橙色",
+  "Advisory": "咨询",
+  "Watch": "观察",
+  "Warning": "警告",
+  "Smithsonian GVP": "史密森尼 GVP",
+  "USGS": "USGS",
+  "Eruption ongoing · VEI {vei}": "正在喷发 · VEI {vei}",
+  "Eruption ongoing": "正在喷发",
+  "Alert level: {level}": "警戒级别：{level}",
+  "Aviation code: {color}": "航空色码：{color}",
+  "erupting since {date}": "自 {date} 起喷发",
+  "erupting since {year}": "自 {year} 年起喷发",
+  "Continuing eruption, no US alert level": "持续喷发，无美国警戒级别",
+  "Colour is the USGS aviation colour code for US volcanoes at advisory level or above, otherwise purple for an eruption the Smithsonian reports as continuing. A white ring marks a continuing eruption; size follows its explosivity (VEI) or the alert level.": "颜色为 USGS 航空色码（适用于处于咨询级别及以上的美国火山）；紫色表示史密森尼报告仍在持续的喷发。白色圆环标记持续喷发；大小对应其爆发指数（VEI）或警戒级别。",
+  "Volcanoes": "火山"
 }

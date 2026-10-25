@@ -13,6 +13,7 @@ test('data providers have both hooks; credential editing stays development-only'
   assert.ok(plugins.some(({ name }) => name === 'gnss-integrity'));
   assert.ok(plugins.some(({ name }) => name === 'global-hazards'));
   assert.ok(plugins.some(({ name }) => name === 'weather-warnings'));
+  assert.ok(plugins.some(({ name }) => name === 'volcanoes'));
   for (const plugin of plugins) {
     if (plugin.name === 'gev-key-setup') {
       assert.equal(plugin.configurePreviewServer, undefined);
@@ -112,6 +113,8 @@ test('real dev and built-preview servers serve provider JSON and terminate unkno
         ['/api/v1/layers/global-hazards/unknown', 404],
         ['/api/v1/layers/weather-warnings/status', 200],
         ['/api/v1/layers/weather-warnings/unknown', 404],
+        ['/api/v1/layers/volcanoes/status', 200],
+        ['/api/v1/layers/volcanoes/unknown', 404],
         ['/api/terrain/heights?points=invalid', 400],
         ['/api/overpass', 405],
         ['/api/overpass/status', 200],
@@ -148,6 +151,15 @@ test('real dev and built-preview servers serve provider JSON and terminate unkno
             [
               ['gdacs', false],
               ['eonet', false],
+            ],
+            route,
+          );
+        if (route === '/api/v1/layers/volcanoes/status')
+          assert.deepEqual(
+            body.sources.map(({ id, cached }) => [id, cached]),
+            [
+              ['gvp', false],
+              ['usgs', false],
             ],
             route,
           );
