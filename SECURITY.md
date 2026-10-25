@@ -105,6 +105,14 @@ The dev server is a **key broker**: every server-side key above is spendable by 
   `none` when widening the publish: it becomes an explicit empty list before
   Vite loads configuration, so the gateway cannot regain Provider Settings
   access. Unset or blank values preserve automatic gateway discovery.
+- **The production image trusts no peer at all.** Behind a reverse proxy such as
+  Nginx Proxy Manager every public request reaches the container from the
+  proxy's own address, so listing that address in `GEV_KEY_SETUP_TRUSTED_PEERS`
+  would give the whole internet Provider Settings. `deploy/Dockerfile` sets the
+  list to `none`, `scripts/docker-prod-start.mjs` forces it empty and ignores an
+  operator value, and the preview server never mounts Provider Settings. Keys are
+  set by editing the `.env` in the data volume; the proxy must authenticate
+  visitors itself (an Access List). See [docs/DEPLOY-UNRAID.md](docs/DEPLOY-UNRAID.md).
 - **Provider-side budgets are the real backstop.** For hard spend protection, configure limits where the money is: OpenAI platform usage limits, Google Cloud budget alerts + per-API quotas, and equivalent controls for any other keyed provider.
 - **Pinokio LAN and Cloudflare sharing are refused.** The current supported
   Pinokio release re-reads sharing state when an app registers its Open URL and

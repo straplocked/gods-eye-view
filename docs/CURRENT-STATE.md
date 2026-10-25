@@ -1645,7 +1645,26 @@ in both modes instead of the application HTML. Browser routes retain SPA fallbac
 Credential editing (`/api/setup/*` and Provider Settings) is development-only;
 preview returns JSON 404 for those endpoints. Server credentials come from the
 local environment; browser keys are captured at build time. Rebuild after changing
-a browser key. Preview is for local build verification, not a production server.
+a browser key. Preview alone is for local build verification; the production
+container below serves it behind an authenticating proxy.
+
+## Production container image
+
+`deploy/Dockerfile` builds a self-contained image of the built app and
+`scripts/docker-prod-start.mjs` serves it with `vite preview` (no bind-mounted
+source, no HMR, no websocket). `.github/workflows/publish.yml` pushes it to
+`ghcr.io/straplocked/gods-eye-view` (`latest` and `sha-<short>`) on every push to
+`main` and on demand. All persistent state lives in one volume, `/data`: `.env`
+(provider keys, read at start), `.gev-cache/` and `.gev-logs/`, which the image
+links into the application root so every provider's repo-relative path lands there.
+The launcher trusts no key-setup peer regardless of `GEV_KEY_SETUP_TRUSTED_PEERS`,
+because behind a reverse proxy every visitor shares the proxy's address; Provider
+Settings is never served, so keys are set by editing the volume's `.env`. A `.env`
+that exists but cannot be read stops the start with the fix instead of running
+keyless. Browser-side keys are compiled in at build time and are absent from the
+published image; a private build can pass `.env` as a BuildKit secret.
+`deploy/unraid/gods-eye-view.xml` is the Unraid template and
+[DEPLOY-UNRAID.md](DEPLOY-UNRAID.md) the step-by-step with Nginx Proxy Manager.
 
 ## CCTV and radio provider modules
 
