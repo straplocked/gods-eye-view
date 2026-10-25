@@ -1100,5 +1100,12 @@
   "src/layers/globalHazards/cards.test.mjs",
   "src/layers/globalHazards/ownership.test.mjs",
   "src/testSupport/geojson.mjs",
-  "src/testSupport/globalHazardsFixtures.mjs"
+  "src/testSupport/globalHazardsFixtures.mjs",
+  "server/providers/nwsZones.test.mjs",
+  "src/data/weatherWarningsProxy.test.mjs",
+  "src/layers/weatherWarnings/records.test.mjs",
+  "src/layers/weatherWarnings/source.test.mjs",
+  "src/layers/weatherWarnings/cards.test.mjs",
+  "src/layers/weatherWarnings/ownership.test.mjs",
+  "src/testSupport/weatherWarningsFixtures.mjs"
 ]

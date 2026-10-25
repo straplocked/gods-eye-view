@@ -165,6 +165,41 @@ export function createUpstreamClient({
   return { fetch: request, fetchJson, fetchText };
 }
 
+const RESERVED_SOURCE_KEYS = new Set([
+  'id',
+  'ok',
+  'stale',
+  'count',
+  'fetchedAt',
+  'truncated',
+  'error',
+]);
+
+/**
+ * Subsource-specific status for `metadata.sources[]` (e.g. NWS
+ * `pendingZones`): only flat scalar values under non-reserved keys survive,
+ * so a normalizer cannot smuggle a large or structured value into the body.
+ */
+function sourceDetails(details) {
+  if (details === null || typeof details !== 'object' || Array.isArray(details))
+    return {};
+  const result = {};
+  for (const [key, value] of Object.entries(details).slice(0, 8)) {
+    if (
+      RESERVED_SOURCE_KEYS.has(key) ||
+      !/^[A-Za-z][A-Za-z0-9]{0,31}$/.test(key)
+    )
+      continue;
+    if (
+      typeof value === 'boolean' ||
+      (typeof value === 'number' && Number.isFinite(value)) ||
+      (typeof value === 'string' && value.length <= 64)
+    )
+      result[key] = value;
+  }
+  return result;
+}
+
 function validateConfig({ name, layerId, subsources }) {
   if (typeof name !== 'string' || !name)
     throw new TypeError('Keyless feed needs a plugin name');
@@ -194,6 +229,9 @@ function validateConfig({ name, layerId, subsources }) {
  * FeatureCollection whose features carry a non-empty string `id` unique within
  * that subsource, and throws (e.g. `invalidPayload()`) on a corrupt payload —
  * a thrown refresh is never cached, so it cannot become an empty snapshot.
+ * The collection may also carry `details`, an object of flat scalars that the
+ * kit copies into that subsource's `metadata.sources[]` entry (NWS reports
+ * `pendingZones` this way); reserved keys and structured values are dropped.
  * A legitimately empty collection (nothing current) is cached like any other.
  *
  * The response is a FeatureCollection: feature ids become
@@ -284,7 +322,12 @@ export function createKeylessFeedProxy({
       );
       throw invalidPayload('normalized collection failed validation');
     }
-    return { features, fetchedAt: now(), truncated };
+    return {
+      features,
+      fetchedAt: now(),
+      truncated,
+      details: sourceDetails(collection.details),
+    };
   }
 
   async function acquire(subsource) {
@@ -390,6 +433,7 @@ export function createKeylessFeedProxy({
           sources: subsources.map(({ id }, index) => {
             const result = results[index];
             return {
+              ...(result.value?.details || {}),
               id,
               ok: result.ok,
               stale: result.stale,

@@ -42,8 +42,9 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // Globe rotation adds one motion; visual keyhole fit and explicit
     // reset guidance/defaults update only move_camera and mode descriptions.
     // Restore base descriptions; append only globe-rotation defaults and fit guidance.
-    // Global Hazards (the first keyless-feed layer) extends the manifest.
-    '0b7a35b1b52c68de94807aca1618e1ebd851410b9c8cb3d2281c1f1daf48fe83',
+    // Global Hazards (the first keyless-feed layer) extends the manifest;
+    // Weather & Tsunami Warnings adds a toggle-only entry.
+    'cc3fa425a45e0fe6992e2eb1dd825a2b73873fb3d6be99c04b6b04d55f1f6bba',
   );
 });
 

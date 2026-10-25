@@ -256,6 +256,42 @@ test('feature cap truncates and says so', async () => {
   assert.equal(res.body.metadata.sources[0].truncated, true);
 });
 
+test('subsource details reach metadata.sources as flat scalars only', async () => {
+  const request = install({
+    subsources: [
+      {
+        id: 'alpha',
+        fetchSnapshot: async () => ({
+          ...fc(point('a')),
+          details: {
+            pendingZones: 7,
+            note: 'warming',
+            ok: false,
+            count: 99,
+            nested: { deep: 1 },
+            list: [1],
+            tooLong: 'x'.repeat(65),
+            'bad key': 1,
+            nan: Number.NaN,
+          },
+        }),
+      },
+      { id: 'beta', fetchSnapshot: async () => fc() },
+    ],
+  });
+  const res = await request();
+  const [alpha, beta] = res.body.metadata.sources;
+  assert.equal(alpha.pendingZones, 7);
+  assert.equal(alpha.note, 'warming');
+  // Reserved status keys cannot be overridden and structured values are dropped.
+  assert.equal(alpha.ok, true);
+  assert.equal(alpha.count, 1);
+  for (const key of ['nested', 'list', 'tooLong', 'bad key', 'nan'])
+    assert.equal(key in alpha, false, key);
+  assert.equal('pendingZones' in beta, false);
+  assertValidKeylessLayerCollection(res.body, 'test-layer');
+});
+
 test('upstream client sends the User-Agent, the signal and redirect:error', async () => {
   const seen = [];
   const signal = new AbortController().signal;
