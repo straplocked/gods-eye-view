@@ -181,7 +181,10 @@ up the deployment. The image itself holds no state.
 ## 6. Nginx Proxy Manager
 
 1. **Access Lists → Add Access List**: name it, add a username and password under
-   *Authorization*, save. Leave *Satisfy Any* off and *Pass Auth to Host* off.
+   *Authorization*, save. Leave *Pass Auth to Host* off. Add **no** *Access*
+   (IP) rules: with *Satisfy Any*, any `allow` rule that matches the incoming
+   address (Cloudflare's edge, a tunnel, `all`) lets that traffic in without a
+   password.
 2. **Hosts → Proxy Hosts → Add Proxy Host**:
    - Domain Names: `godseye.pluginsynthesis.com`
    - Scheme `http`, Forward Hostname/IP `192.168.1.77`, Forward Port `3650`
@@ -193,6 +196,18 @@ up the deployment. The image itself holds no state.
 4. Browse to `https://godseye.pluginsynthesis.com`. You should get the basic-auth
    prompt, then the globe. NPM forwards the original Host header, which is why
    `GEV_ALLOWED_HOSTS` names that domain.
+5. **Verify the gate from outside; do not trust the UI alone.** Creating an
+   Access List does not apply it: the proxy host's *Access* column must show the
+   list's name, not *Public*, and the Access List page must show `1 Proxy Hosts`.
+   (On first deploy the list existed but was attached to nothing, and the whole
+   app and its APIs answered 200 to anyone.) Then check that every path, the
+   APIs included, answers 401 without credentials:
+
+   ```bash
+   for p in / /api/v1/layers/volcanoes /api/v1/layers/global-hazards/status; do
+     curl -s -o /dev/null -w "$p %{http_code}\n" "https://godseye.pluginsynthesis.com$p"
+   done
+   ```
 
 ## 7. Updating
 
