@@ -287,6 +287,12 @@ const layers = [
     noQuery: 'outage markers and data center points',
   },
   {
+    id: 'news-events',
+    aliases: [],
+    context: false,
+    noQuery: 'news points',
+  },
+  {
     id: 'weather-cyclones',
     aliases: ['cyclones', 'hurricanes', 'typhoons', 'tropical storms'],
     context: false,

@@ -78,6 +78,7 @@ const PANEL_GROUPS = [
       'space-weather',
       'gnss-integrity',
       'airspace',
+      'news-events',
     ],
   },
   {

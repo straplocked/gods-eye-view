@@ -48,8 +48,10 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // Airspace adds a sixth; Buoys & River Gauges adds a seventh (and trims the
     // show_data_layers_menu description to make room); Citizen Air & Radiation
     // Sensors adds an eighth (and trims three more tool descriptions); Internet
-    // Outages & Data Centers adds a ninth (and trims the rangeM description).
-    '2bd50c41411bd6cfcda29c069bba6ea6e6345242940a127a2e87620adc7f819d',
+    // Outages & Data Centers adds a ninth (and trims the rangeM description);
+    // Geolocated News adds a tenth (and trims the Cockpit contact-layer
+    // filter description).
+    '5a815713cee6c12ae7de5393a94da7b2191feef199208657579a7a491b127b5a',
   );
 });
 

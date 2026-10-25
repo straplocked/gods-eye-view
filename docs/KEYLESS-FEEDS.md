@@ -54,6 +54,10 @@ Each subsource's `fetchSnapshot(context)` receives:
   the cap. `gzip: true` gunzips a `.gz` file (fetch already decodes
   `Content-Encoding`), `'auto'` only when the body starts with the gzip magic
   bytes; the decoded size is capped too (default 8x `maxBytes`).
+- `fetchBytes(url, {maxBytes?, emptyStatuses?})`: a binary body (a zip) under
+  the cap, as a `Uint8Array`. GDELT's zip is unpacked by
+  `server/providers/common/zip.js` (`readSingleEntryZip()`), a small reader for
+  an archive that must hold exactly one entry.
 - `fetchImpl(url, init)`: the raw wrapped fetch for anything else (headers must
   be a plain object).
 - `signal`, `now`.
@@ -278,6 +282,11 @@ Read the Global Hazards files as the worked example.
     "whole-country/whole-city or close-landmark ") without changing what it asks
     for, which leaves 52,336 under the unchanged 52,350 ceiling and 14 spare.
     The next layer with a long id will have to trim again or go voice-off.
+    Geolocated News (GDELT) took token `04` and is a toggle with no alias. Its id
+    is short but the `noQuery` text still cost 28 characters (52,364 against 14
+    spare), so it trimmed too: the Cockpit contact-layer filter description lost
+    " for a military-only cycle" (26 characters; the example "military" still says
+    it), which leaves 52,338 under the unchanged 52,350 ceiling and 12 spare.
 11. **Tests**: `records.test.mjs` on hand-written fixtures (valid output via
     `assertValidFeatureCollection`), a proxy test (both hooks, TTL, stale on
     error, byte cap, sanitized 502, no cached empty snapshot, single flight,
@@ -300,6 +309,7 @@ Read the Global Hazards files as the worked example.
 | `water-observations`      | Buoys & River Gauges                   | `buoys`, `rivers` (15 min each)           | `/api/v1/layers/water-observations`      | NWPS fetched in 8 bbox tiles, 3 at a time                      |
 | `citizen-sensors`         | Citizen Air & Radiation Sensors        | `airpm` (10 min), `radiation` (30 min)    | `/api/v1/layers/citizen-sensors`         | PM binned to a 0.1° grid; Safecast in 1 h windows              |
 | `internet-infrastructure` | Internet Outages & Data Centers        | `datacenters` (24 h), `outages` (10 min)  | `/api/v1/layers/internet-infrastructure` | IODA countries at hand-written centroids; PeeringDB AUP caveat |
+| `news-events`             | Geolocated News (GDELT)                | `gdelt` (15 min)                          | `/api/v1/layers/news-events`             | One 2 MB GKG zip per 15 min, md5 checked; top 2,000 places     |
 
 ### Global Hazards (`global-hazards`, token `5`)
 
@@ -982,3 +992,90 @@ PRES PTDY ATMP WTMP DEWP VIS TIDE` header, a `#text` units line, then one row
   where inside the country. Only countries and the regions IODA names are
   covered, not ASNs. PeeringDB is operator-contributed: facilities are those
   its members registered, not every data center. Voice: toggle only.
+
+### Geolocated News (`news-events`, token `04`)
+
+- **Pointer** — `https://data.gdeltproject.org/gdeltv2/lastupdate.txt` (the
+  `http://` form answers 301, and the kit refuses redirects, so https is asked
+  for directly). Three lines `<size> <md5> <url>` for the batch's `export`,
+  `mentions` and `gkg` files. Only the GKG line is read, and only for its
+  14-digit batch time, size and md5: the download URL is rebuilt as
+  `https://data.gdeltproject.org/gdeltv2/<batch>.gkg.csv.zip` from the batch
+  time, so nothing the pointer says can send the server to another host.
+- **Download and unzip** — the zip (about 2 MB in a sample, 6 MB inflated) is
+  read under a 10 MB cap; its length and md5 (`node:crypto`) must match the
+  pointer or the refresh fails with `invalid_payload`. `readSingleEntryZip()`
+  reads the central directory and inflates with `node:zlib` (no dependency): one
+  entry, named `*.gkg.csv`, stored or deflated, not encrypted or ZIP64, declared
+  sizes within 10 MB zipped and 80 MB inflated, inflating no further than its
+  declared size, and a matching CRC-32. A pointer that names a zip over the cap
+  never triggers a download. If the pointer still names the batch already served
+  (GDELT sometimes runs a batch late), the snapshot is reused and only the 200
+  byte pointer is fetched. A live check found the pointer naming a batch (13:00)
+  whose files all answered 404, with the newest real file an hour older. So a
+  404 for the pointed file makes the server try up to six earlier quarter-hour
+  batches, newest first (a URL rebuilt from the stamp, same host). The pointer
+  has no md5 for those, so they are checked by the zip's CRC-32, entry name and
+  size caps only, and the snapshot says `md5Verified: false` with its own
+  `batch`. A fallback batch is reused, not downloaded again, until a newer file
+  appears (the pointed file is probed once per refresh). Any other HTTP error,
+  a wrong size or a wrong md5 on the pointed file fails the refresh at once
+  (`upstream_status` / `invalid_payload`) and the last good batch is served
+  stale; so does having no file for any of the seven batches.
+- **GKG 2.1** — 27 tab-separated columns per record, no header. Used: 1 `DATE`
+  (the batch time), 3 `SourceCommonName`, 4 `DocumentIdentifier` (the article
+  URL), 7 V1 `Themes`, 10 `V2EnhancedLocations`, 15 `V2Tone` (first value =
+  average tone) and 26 `ExtrasXML`, whose `PAGE_TITLE` is the headline (GKG has
+  no article text) and `PAGE_PRECISEPUBTIMESTAMP` the publisher's time (used
+  when not after the batch, else the batch time). A location block is
+  `Type#FullName#CountryCode#ADM1#ADM2#Lat#Long#FeatureID#CharOffset`; the
+  type is 1 country, 2 US state, 3 US city, 4 world city, 5 world state, and the
+  country code is FIPS 10-4, not ISO.
+- **Skipped, never fatal** — a line without 27 columns, without a plain
+  http(s) URL (no credentials, at most 2,000 characters) or with an impossible
+  or future batch time (`details.corruptLines`); a location block without nine
+  fields, a type outside 1 to 5, a name, plain-number coordinates inside WGS84,
+  or at 0,0 (`details.skippedBlocks`; the record's other blocks still count). A
+  tone that is not a number leaves the article without a tone. A body with no
+  readable record at all is refused (`invalid_payload`), never served or cached
+  as an empty map. Titles are XML-entity decoded, stripped of control
+  characters and clipped to 200 characters; they are third-party content shown
+  as sent.
+- **Aggregation** — by GDELT `FeatureID` (a country's is its FIPS code), else
+  the coordinates rounded to 4 decimals. An article counts once per place; a
+  country-level mention is dropped when the same article names a state or city
+  in that country; one record counts for at most 20 distinct places (a world
+  roundup would otherwise light up the map). Feature id = the FeatureID
+  (`gdelt:-2102835` on the wire). Properties: `name` (GDELT's full name),
+  `country` (the last part of the name), `countryCode` (FIPS), `precision`
+  (`country`, `state` or `city`), `articleCount`, `tone` (mean of the articles
+  with one, 2 decimals, or null), `conflict` and `conflictCount` (articles with
+  a conflict theme: `ARMEDCONFLICT`, `KILL`, `TERROR`, `PROTEST`, `MILITARY`,
+  `REBELS`, `REBELLION`, `CEASEFIRE`, `SEIGE`, `ASSASSINATION`, the World Bank
+  conflict and war codes, any `TAX_TERROR_GROUP*`; `conflict` is true when a
+  quarter or more of the place's articles have one, because `KILL` and
+  `PROTEST` alone flagged about 40% of single-article places and one red
+  article should not turn a 50-article city red), `themes` (up to 5 by article
+  count; GDELT's `TAX_`, `WB_`, `EPU_` and similar taxonomy codes are hidden and
+  the code is turned into words), `articles` (up to 5 most recent: `url` is the
+  https link or null, `source`, `title`, `tone`, `date`), `timestamp` (the
+  newest article). Features are sorted by article count, then conflict, then
+  recency; the proxy keeps the first 2,000 and reports `truncated: true`.
+  `metadata.sources[gdelt]` also carries `batch` (ISO), `records`, `geolocated`,
+  `locations` (before the cut), `corruptLines`, `skippedBlocks` and
+  `md5Verified`.
+- **Display** — points on the ellipsoid, 5 to 14 px by article count (red for
+  conflict, blue otherwise, a white ring for a country-level mention at the
+  country centre); the card shows the article count and tone, the conflict
+  count, themes, three headlines (source · title), the age of the newest and
+  opens the newest https article. The Layers panel row says how old the batch is
+  (GDELT lagging shows as an old batch) and the legend explains the geocoding
+  caveat. One feed, no toggle chip.
+- **Terms and caveats** — GDELT is open for any use, with citation of the GDELT
+  Project and a link (credited in the data credits and DATA_SOURCES.md). Cadence:
+  one pointer read and, for a new batch, one 2 MB download per 15 minutes. GKG
+  is machine coded: places are where a name was geocoded, tone and themes are
+  heuristics, and a story is counted by each place it names, so one event can
+  appear in several places. Only the latest batch is shown, not a rolling
+  window, so a quiet 15 minutes looks sparse. Informational only. Voice: toggle
+  only.

@@ -202,8 +202,8 @@ function encode(state) {
 
 test('production registry is exact, canonical, and rejects incomplete contracts', async () => {
   assert.equal(validateLayerStateRegistry(), true);
-  assert.equal(REGISTERED_LAYER_IDS.length, 40);
-  assert.equal(new Set(REGISTERED_LAYER_IDS).size, 40);
+  assert.equal(REGISTERED_LAYER_IDS.length, 41);
+  assert.equal(new Set(REGISTERED_LAYER_IDS).size, 41);
   assert.ok(REGISTERED_LAYER_IDS.includes('transit'));
   assert.deepEqual(REGISTERED_LAYER_IDS, [...REGISTERED_LAYER_IDS].sort());
   assert.deepEqual(LEGACY_LAYER_STATE_TOKENS, {
@@ -244,21 +244,21 @@ test('production registry is exact, canonical, and rejects incomplete contracts'
   }
   // Aviation Weather took the last free digit (9), Airspace the first
   // two-character pair (00), Buoys & River Gauges the second (01), Citizen
-  // Air & Radiation Sensors the third (02) and Internet Outages & Data
-  // Centers the fourth (03): the next token is 04.
-  assert.equal(nextLayerStateToken(), '04');
+  // Air & Radiation Sensors the third (02), Internet Outages & Data Centers
+  // the fourth (03) and Geolocated News the fifth (04): the next token is 05.
+  assert.equal(nextLayerStateToken(), '05');
   assert.equal(
     nextLayerStateToken({
       ...LAYER_STATE_TOKEN_RESERVATIONS,
-      alpha: '04',
+      alpha: '05',
     }),
-    '05',
+    '06',
   );
   const digitsExhausted = { ...LAYER_STATE_TOKEN_RESERVATIONS };
-  assert.equal(nextLayerStateToken(digitsExhausted), '04');
+  assert.equal(nextLayerStateToken(digitsExhausted), '05');
   assert.equal(
-    nextLayerStateToken({ ...digitsExhausted, retired: '04', used: '05' }),
-    '06',
+    nextLayerStateToken({ ...digitsExhausted, retired: '05', used: '06' }),
+    '07',
   );
   assert.equal(
     nextLayerStateToken({
@@ -305,8 +305,8 @@ test('production registry is exact, canonical, and rejects incomplete contracts'
   assert.equal(
     validateLayerStateAllocations(LAYER_STATE_TOKEN_RESERVATIONS, {
       ...LAYER_STATE_TOKEN_RESERVATIONS,
-      future: '04',
-      next: '05',
+      future: '05',
+      next: '06',
     }),
     true,
   );
@@ -314,21 +314,22 @@ test('production registry is exact, canonical, and rejects incomplete contracts'
     () =>
       validateLayerStateAllocations(LAYER_STATE_TOKEN_RESERVATIONS, {
         ...LAYER_STATE_TOKEN_RESERVATIONS,
-        future: '05',
+        future: '06',
       }),
-    /next free token 04/,
+    /next free token 05/,
   );
   // Before Aviation Weather took it, 9 was the last free digit (and 00 was
   // the first free pair, before Airspace took it, 01 the next, before
   // Buoys & River Gauges took it, 02 the next, before Citizen Air &
-  // Radiation Sensors took it, and 03 the next, before Internet Outages &
-  // Data Centers took it).
+  // Radiation Sensors took it, 03 the next, before Internet Outages & Data
+  // Centers took it, and 04 the next, before Geolocated News took it).
   const beforeLastDigit = { ...digitsExhausted };
   delete beforeLastDigit['aviation-weather'];
   delete beforeLastDigit.airspace;
   delete beforeLastDigit['water-observations'];
   delete beforeLastDigit['citizen-sensors'];
   delete beforeLastDigit['internet-infrastructure'];
+  delete beforeLastDigit['news-events'];
   assert.equal(
     validateLayerStateAllocations(beforeLastDigit, {
       ...beforeLastDigit,
@@ -340,18 +341,18 @@ test('production registry is exact, canonical, and rejects incomplete contracts'
   assert.equal(
     validateLayerStateAllocations(digitsExhausted, {
       ...digitsExhausted,
-      pairB: '05',
-      pairA: '04',
+      pairB: '06',
+      pairA: '05',
     }),
     true,
   );
   assert.throws(
     () =>
       validateLayerStateAllocations(
-        { ...LAYER_STATE_TOKEN_RESERVATIONS, merged: '04' },
-        { ...LAYER_STATE_TOKEN_RESERVATIONS, merged: '04', competing: '04' },
+        { ...LAYER_STATE_TOKEN_RESERVATIONS, merged: '05' },
+        { ...LAYER_STATE_TOKEN_RESERVATIONS, merged: '05', competing: '05' },
       ),
-    /next free token 05/,
+    /next free token 06/,
   );
   assert.throws(
     () => validateLayerStateAllocations({ future: '00' }, { future: '01' }),
@@ -507,7 +508,7 @@ test('unknown enabled-layer tokens reject the payload instead of becoming an emp
 });
 
 test('malformed enabled-layer lists reject the entire payload', () => {
-  for (const value of ['.c', 'c.', 'c..e', 'c.c', '04', 'c.04']) {
+  for (const value of ['.c', 'c.', 'c..e', 'c.c', '05', 'c.05']) {
     assert.equal(
       decodeLayerStateParams(new URLSearchParams(`v=2&l=${value}`)),
       null,

@@ -370,6 +370,44 @@ test('upstream client gunzips .gz text bodies under a decoded cap', async () => 
   );
 });
 
+test('upstream client reads binary bodies under a byte cap', async () => {
+  const signal = new AbortController().signal;
+  const bytes = Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 0, 255]);
+  const client = (response, maxBytes = 16) =>
+    createUpstreamClient({
+      fetchImpl: async () => response(),
+      signal,
+      maxBytes,
+    });
+  assert.deepEqual(
+    await client(() => new Response(bytes)).fetchBytes('u'),
+    bytes,
+  );
+  assert.equal(
+    await client(() => new Response('', { status: 404 })).fetchBytes('u', {
+      emptyStatuses: [404],
+    }),
+    null,
+  );
+  await assert.rejects(
+    client(() => new Response('', { status: 503 })).fetchBytes('u'),
+    { code: 'upstream_status' },
+  );
+  await assert.rejects(
+    client(() => new Response(new Uint8Array(17))).fetchBytes('u'),
+    { code: 'RESPONSE_TOO_LARGE' },
+  );
+  // A per-call cap wins over the client default.
+  assert.equal(
+    (
+      await client(() => new Response(new Uint8Array(40)), 16).fetchBytes('u', {
+        maxBytes: 64,
+      })
+    ).byteLength,
+    40,
+  );
+});
+
 test('error codes are fixed and client-safe', () => {
   assert.equal(keylessErrorCode(invalidPayload('x')), 'invalid_payload');
   assert.equal(

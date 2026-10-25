@@ -3292,5 +3292,29 @@
   "PeeringDB": "PeeringDB",
   "Data center or network facility": "Дата-центр или сетевой узел",
   "Red and orange markers are countries where Georgia Tech IODA sees internet connectivity dropping, drawn at the country centre because IODA reports countries, not places; green ones recovered in the last 24 hours. Cyan dots are data centers and interconnection facilities listed in PeeringDB. IODA signals can raise false alarms: not proof of an outage.": "Красные и оранжевые метки — страны, где Georgia Tech IODA видит падение связности интернета; они нарисованы в центре страны, потому что IODA сообщает о странах, а не о местах; зелёные восстановились за последние 24 часа. Голубые точки — дата-центры и узлы взаимодействия из PeeringDB. Сигналы IODA могут давать ложные тревоги: это не доказательство сбоя.",
-  "Internet Outages & Data Centers": "Сбои интернета и дата-центры"
+  "Internet Outages & Data Centers": "Сбои интернета и дата-центры",
+  "Geolocated News (GDELT)": "Новости с геопривязкой (GDELT)",
+  "{count} articles": {
+    "one": "{count} статья",
+    "few": "{count} статьи",
+    "many": "{count} статей",
+    "other": "{count} статьи"
+  },
+  "Average tone {tone}": "Средняя тональность {tone}",
+  "{count} articles on conflict or unrest": {
+    "one": "{count} статья о конфликте или беспорядках",
+    "few": "{count} статьи о конфликте или беспорядках",
+    "many": "{count} статей о конфликте или беспорядках",
+    "other": "{count} статьи о конфликте или беспорядках"
+  },
+  "Themes: {themes}": "Темы: {themes}",
+  "Country mention: marker at the country centre": "Упоминание страны: маркер в центре страны",
+  "latest report {age} ago": "последнее сообщение {age} назад",
+  "Conflict, unrest or terror reports": "Сообщения о конфликтах, беспорядках или терроризме",
+  "Other news": "Прочие новости",
+  "Showing the {count} places with the most articles.": "Показаны {count} мест с наибольшим числом статей.",
+  "GDELT batch from {age} ago": "Выгрузка GDELT {age} назад",
+  "{records} articles read, {places} places found": "Прочитано статей: {records}, найдено мест: {places}",
+  "GDELT": "GDELT",
+  "Places named in the news articles GDELT read in its latest 15-minute batch. A dot is where GDELT geocoded a place name, which is not always where the event happened; its size follows the number of articles. Red marks places where a quarter or more of the articles have conflict, unrest or terror themes. GDELT codes articles by machine, so places, tone and themes can be wrong, and headlines are third-party content.": "Места, упомянутые в новостных статьях, которые GDELT прочитал в последней 15-минутной порции. Точка стоит там, где GDELT определил место по названию, а это не всегда место события; размер зависит от числа статей. Красным отмечены места, где четверть и более статей посвящены конфликтам, беспорядкам или терроризму. GDELT размечает статьи автоматически, поэтому места, тональность и темы могут быть неверными, а заголовки — это сторонний контент."
 }

@@ -3082,5 +3082,23 @@
   "PeeringDB": "PeeringDB",
   "Data center or network facility": "数据中心或网络设施",
   "Red and orange markers are countries where Georgia Tech IODA sees internet connectivity dropping, drawn at the country centre because IODA reports countries, not places; green ones recovered in the last 24 hours. Cyan dots are data centers and interconnection facilities listed in PeeringDB. IODA signals can raise false alarms: not proof of an outage.": "红色和橙色标记是 Georgia Tech IODA 检测到互联网连通性下降的国家，因 IODA 只报告国家而非具体地点，所以画在国家中心；绿色表示过去 24 小时内已恢复。青色圆点是 PeeringDB 中列出的数据中心和互联设施。IODA 信号可能误报：并不能证明发生了中断。",
-  "Internet Outages & Data Centers": "互联网中断与数据中心"
+  "Internet Outages & Data Centers": "互联网中断与数据中心",
+  "Geolocated News (GDELT)": "地理定位新闻（GDELT）",
+  "{count} articles": {
+    "other": "{count} 篇文章"
+  },
+  "Average tone {tone}": "平均情感倾向 {tone}",
+  "{count} articles on conflict or unrest": {
+    "other": "{count} 篇涉及冲突或动荡的文章"
+  },
+  "Themes: {themes}": "主题：{themes}",
+  "Country mention: marker at the country centre": "提及国家：标记位于该国中心",
+  "latest report {age} ago": "最新报道于 {age} 前",
+  "Conflict, unrest or terror reports": "冲突、动荡或恐怖主义报道",
+  "Other news": "其他新闻",
+  "Showing the {count} places with the most articles.": "显示文章最多的 {count} 个地点。",
+  "GDELT batch from {age} ago": "GDELT 批次来自 {age} 前",
+  "{records} articles read, {places} places found": "已读取 {records} 篇文章，找到 {places} 个地点",
+  "GDELT": "GDELT",
+  "Places named in the news articles GDELT read in its latest 15-minute batch. A dot is where GDELT geocoded a place name, which is not always where the event happened; its size follows the number of articles. Red marks places where a quarter or more of the articles have conflict, unrest or terror themes. GDELT codes articles by machine, so places, tone and themes can be wrong, and headlines are third-party content.": "GDELT 在最近一个 15 分钟批次中读取的新闻文章所提到的地点。圆点位于 GDELT 根据地名进行地理编码的位置，不一定是事件发生的地点；大小对应文章数量。红色表示至少四分之一的文章涉及冲突、动荡或恐怖主义主题的地点。GDELT 由机器对文章进行编码，因此地点、情感倾向和主题可能有误，标题为第三方内容。"
 }

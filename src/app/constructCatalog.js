@@ -36,6 +36,7 @@ import { createApplicationAirspace } from './layers/airspace.js';
 import { createApplicationWaterObservations } from './layers/waterObservations.js';
 import { createApplicationCitizenSensors } from './layers/citizenSensors.js';
 import { createApplicationInternetInfrastructure } from './layers/internetInfrastructure.js';
+import { createApplicationNewsEvents } from './layers/newsEvents.js';
 import { createApplicationCables } from './layers/submarineCables.js';
 import { createApplicationStreetLevel } from './layers/streetLevel.js';
 import { createInfrastructureLayers } from '../data/infrastructure.js';
@@ -156,6 +157,7 @@ export function createApplicationCatalog({
         createApplicationInternetInfrastructure({
           source: sources['internet-infrastructure'],
         }),
+        createApplicationNewsEvents({ source: sources['news-events'] }),
         createApplicationAlpr({ surface, source: sources.alpr }),
         createApplicationStreetLevel({
           surface,
