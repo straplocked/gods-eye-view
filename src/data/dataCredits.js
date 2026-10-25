@@ -203,6 +203,12 @@ export const DATA_CREDITS = [
       'Volcano alert levels: ' +
       '<a href="https://www.usgs.gov/programs/VHP" target="_blank" rel="noopener">USGS Volcano Hazards Program</a>',
   },
+  {
+    key: 'swpc-space-weather',
+    html:
+      'Aurora and Kp index: ' +
+      '<a href="https://www.swpc.noaa.gov/" target="_blank" rel="noopener">NOAA Space Weather Prediction Center</a>',
+  },
   OSM_CREDIT,
   OPENMAPTILES_CREDIT,
   {

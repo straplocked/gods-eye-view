@@ -30,6 +30,7 @@ import { createApplicationGnssIntegrity } from './layers/gnss.js';
 import { createApplicationGlobalHazards } from './layers/globalHazards.js';
 import { createApplicationWeatherWarnings } from './layers/weatherWarnings.js';
 import { createApplicationVolcanoes } from './layers/volcanoes.js';
+import { createApplicationSpaceWeather } from './layers/spaceWeather.js';
 import { createApplicationCables } from './layers/submarineCables.js';
 import { createApplicationStreetLevel } from './layers/streetLevel.js';
 import { createInfrastructureLayers } from '../data/infrastructure.js';
@@ -136,6 +137,7 @@ export function createApplicationCatalog({
           source: sources['weather-warnings'],
         }),
         createApplicationVolcanoes({ source: sources.volcanoes }),
+        createApplicationSpaceWeather({ source: sources['space-weather'] }),
         createApplicationAlpr({ surface, source: sources.alpr }),
         createApplicationStreetLevel({
           surface,

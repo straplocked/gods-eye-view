@@ -159,9 +159,10 @@ createKeylessFeatureLayer({
   sourceName: 'GDACS · NASA EONET', // each part must be in the catalog
   updateInterval: 15 * 60_000,
   subsources: [{ id: 'gdacs', label: msg('GDACS') }, ...], // row chips
-  style: (feature) => ({ color, outlineColor, pixelSize, outlineWidth, fillAlpha, lineWidth }),
-  card: (feature, nowMs) => ({ title, details: [...], accent, link }),
-  legend: (visibleFeatures) => [{ label, color, count, blurb? }],
+  style: (feature) => ({ color, outlineColor, pixelSize, outlineWidth, fillAlpha, lineWidth, outline }),
+  card: (feature, nowMs, metadata) => ({ title, details: [...], accent, link }),
+  legend: (visibleFeatures, metadata) => [{ label, color, count, blurb? }],
+  rowInfo: (metadata, nowMs) => ({ text, title? }) | null, // line under the panel row
   analystRecord: (feature, anchor) => ({ id, lat, lon, ... }),
   source, overlayHost, screenSpaceEventHandlerFactory, picking, pointer, openExternal,
 });
@@ -171,6 +172,13 @@ createKeylessFeatureLayer({
   are a translucent fill plus a clamped outline. Entities are rebuilt in one
   suspended batch and only when the snapshot changed; nothing runs per frame,
   so the render governor needs no hold.
+- Optional hooks for a layer whose second feed carries no geometry (Aurora &
+  Space Weather): `rowInfo(metadata, nowMs)` returns a line shown under the
+  Layers panel row (`info`/`infoTitle` in the row controls), `card` and `legend`
+  receive the latest response `metadata` as an extra argument, a subsource with
+  `chip: false` keeps its name for the "`<feed>` feed unavailable" status
+  without a toggle chip, and a style with `outline: false` draws an area as a
+  fill only (the default outline would draw seams between neighboring blocks).
 - One click card at a time goes through the world-overlay host (Cesium text
   labels are forbidden). The card's click-through opens `link` only if it is a
   credential-free `https:` URL.
@@ -243,8 +251,11 @@ Read the Global Hazards files as the worked example.
     chose a toggle-only entry (`noQuery`, two aliases), which fits under the
     existing ceiling with seven characters to spare (52,193 of 52,200).
     Volcanoes needed 24 even as a toggle with no alias (52,217), and took the
-    "deliberate new budget" route: the ceiling is now 52,250, 33 spare, so the
-    next layer is in the same position.
+    "deliberate new budget" route: the ceiling is now 52,250, 33 spare.
+    Aurora & Space Weather is a toggle with no alias (52,249, 32 characters);
+    the "aurora" alias would have cost 22 more and was dropped rather than
+    raising the ceiling again. One character is spare, so the next layer must
+    choose: voice-off, trimming elsewhere, or a new budget.
 11. **Tests**: `records.test.mjs` on hand-written fixtures (valid output via
     `assertValidFeatureCollection`), a proxy test (both hooks, TTL, stale on
     error, byte cap, sanitized 502, no cached empty snapshot, single flight,
@@ -261,6 +272,7 @@ Read the Global Hazards files as the worked example.
 | `global-hazards`   | Global Hazards             | `gdacs` (15 min), `eonet` (30 min) | `/api/v1/layers/global-hazards`   | First layer on the kit             |
 | `weather-warnings` | Weather & Tsunami Warnings | `nws` (2 min), `tsunami` (5 min)   | `/api/v1/layers/weather-warnings` | NWS zone cache fills progressively |
 | `volcanoes`        | Volcanoes                  | `gvp` (6 h), `usgs` (10 min)       | `/api/v1/layers/volcanoes`        | Joins a volcano in both feeds      |
+| `space-weather`    | Aurora & Space Weather     | `aurora` (5 min), `kp` (15 min)    | `/api/v1/layers/space-weather`    | Kp rides in metadata, no features  |
 
 ### Global Hazards (`global-hazards`, token `5`)
 
@@ -417,3 +429,70 @@ Day` (or the `YYYYMMDD` string, zeroes meaning unknown); `eruptionStart` is an
   volcanoes have only the GVP view. Informational, not for life-safety or
   flight-planning decisions. Voice: toggle only; reaching it needed a deliberate
   +50 characters on the voice prompt ceiling (now 52,250).
+
+### Aurora & Space Weather (`space-weather`, token `8`)
+
+- **Aurora** — `https://services.swpc.noaa.gov/json/ovation_aurora_latest.json`,
+  the NOAA SWPC OVATION nowcast (about 900 KB; the file says `"type":
+"MultiPoint"` but is not GeoJSON: `coordinates` is a list of
+  `[longitude 0..359, latitude -90..90, probability %]`, 65,160 cells at 1°,
+  plus `Observation Time` and `Forecast Time`). Refreshed upstream about every
+  5 minutes (TTL 5 min). Longitude wraps into -180..180 (350 → -10, 180 →
+  -180); entries that are not integer lon/lat with a probability of 0-100 are
+  skipped and counted (`skippedCells`), duplicates keep the first, and a grid
+  that is all bad (a changed resolution) or more than half bad is a corrupt
+  payload, never a calm sky.
+- **Why polygons, not points** — 1° cells drawn as dots would be hundreds to
+  thousands of overlapping entities with no sense of area; filled bands read as
+  the aurora oval and serialize smaller. Rendered in the dev server with a
+  synthetic storm (live route patched in the page), the bands show no seams
+  between blocks at either 90° or 30° block widths; the pinched wedge at the
+  pole in the screenshots is the Esri imagery, not the layer. Cells at `AURORA_MIN_PROBABILITY` (10 %) or more are
+  grouped into four bands (10-20, 20-40, 40-60, 60 %+), hemisphere and 90°
+  block of longitude, and each group's cells are traced into polygons with
+  holes (`traceCells()` in `records.js`: boundary edges chained into rings, a
+  left turn at a corner where two cells meet diagonally, so rings never touch
+  themselves; wound counter-clockwise outer, clockwise holes). A cell covers
+  its grid point ±0.5°, clipped at ±180° and ±90°; the cell centered on the
+  antimeridian is drawn on both sides of it. Every outline vertex is kept
+  (one degree apart), so a geodesic edge stays on its parallel; the 90° blocks
+  keep each polygon well under a hemisphere, which Cesium triangulates
+  reliably, and they have no outline so the shared edges do not show.
+- **Size** — the October 2026 samples serialize to 5.7 KB (788 cells, 3
+  features) and 7.0 KB (1,059 cells); a solid belt of 22,320 cells is 28 KB
+  and a ragged storm of 28,080 cells is 126 KB. A grid needing more than
+  `AURORA_MAX_VERTICES` (25,000, about 400 KB) is treated as a corrupt payload.
+- **Features** — id `<hemisphere>-<band min>-<block>` (`north-20-1`, so
+  `aurora:north-20-1` on the wire). Properties: `hemisphere`, `band` (lower
+  bound %), `bandMax` (upper bound, null for the top band), `probability` (peak
+  cell in the feature), `cells`, `observationTime`, `forecastTime`, `timestamp`
+  (= observation time). `metadata.sources[aurora]` also carries
+  `observationTime`, `forecastTime`, `activeCells`, `peakProbability` and
+  `skippedCells`.
+- **Kp** — `https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json`,
+  now an array of objects (`time_tag`, `Kp`, `a_running`, `station_count`; one
+  per 3-hour interval, about 59 rows, `time_tag` zone-less UTC); the older
+  layout, an array of arrays with a header row and string cells, is read as
+  well. The latest interval by time wins (the row for the interval that has
+  ended, so it can be up to about 4 hours behind the clock). No features: the
+  subsource's `details` become `metadata.sources[kp]` = `{kp, kpTime, gScale,
+kpMax24h}` (`kpMax24h` = highest of the 8 latest rows) next to the kit's own
+  fields, and `spaceWeatherFromMetadata()` reads them back. TTL 15 min. A Kp
+  outside 0-9 or an unreadable row is skipped; no valid row is a corrupt
+  payload.
+- **G-scale** — NOAA lists whole Kp values (G1 = 5, G2 = 6, G3 = 7, G4 = 8
+  including 9-, G5 = 9) and publishes Kp in thirds, so `kpToGScale()` rounds to
+  the nearest whole number and keeps 9- (8.67) at G4: 7.33 → G3, 4.67 (5-) →
+  G1, 4.33 → none. The NOAA page does not spell out the thirds; this reading
+  follows its "8, including a 9-" wording.
+- **Display** — fill by band (green, lime, yellow, red; alpha 0.22 to 0.48), no
+  outline. The Layers row shows "Kp 7.33 · G3 strong geomagnetic storm" (the
+  tooltip names the 3-hour interval and the 24-hour peak) and a legend of the
+  bands drawn; a click opens a card with the band, the peak chance, the
+  nowcast time and age, the Kp line and a link to SWPC's 30-minute aurora
+  forecast page. Kp is global, so there are no feed chips.
+- **Caveats** — OVATION is a model nowcast of aurora probability for the next
+  hour or so; it says nothing about cloud or light pollution. The two feeds
+  update on different clocks, so a card's Kp can be a few hours older than the
+  bands. Informational, not for safety-critical use. Voice: toggle only (no
+  alias).

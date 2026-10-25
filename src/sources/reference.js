@@ -6,6 +6,7 @@ import { createAdsbGnssSource } from '../layers/gnss/source.js';
 import { createGlobalHazardsSource } from '../layers/globalHazards/source.js';
 import { createWeatherWarningsSource } from '../layers/weatherWarnings/source.js';
 import { createVolcanoesSource } from '../layers/volcanoes/source.js';
+import { createSpaceWeatherSource } from '../layers/spaceWeather/source.js';
 
 /** Construct the existing reference feeds independently of application setup. */
 export function createReferenceSources() {
@@ -18,5 +19,6 @@ export function createReferenceSources() {
     'global-hazards': createGlobalHazardsSource(),
     'weather-warnings': createWeatherWarningsSource(),
     volcanoes: createVolcanoesSource(),
+    'space-weather': createSpaceWeatherSource(),
   };
 }
