@@ -86,7 +86,7 @@ export const ACTION_DESCRIPTIONS = {
   },
   set_layer_visibility: {
     description:
-      "Enable or disable one God's Eye View data layer. Every shipped layer is in the enum; never tell the user a listed layer does not exist.",
+      "Enable or disable one God's Eye View data layer. Every shipped layer is in the enum; never say a listed layer does not exist.",
     $position: 1,
     parameters: {
       properties: {
@@ -104,14 +104,14 @@ export const ACTION_DESCRIPTIONS = {
     parameters: {
       properties: {
         layerId: {
-          description: 'Optional layer row to scroll into view and highlight.',
+          description: 'Optional layer row to scroll to and highlight.',
           $position: 2,
         },
       },
     },
   },
   set_panel_open: {
-    description: 'Open or close a GEV UI panel/dropdown.',
+    description: 'Open or close a GEV UI panel.',
     $position: 1,
   },
   set_context_mode: {

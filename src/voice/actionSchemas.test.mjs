@@ -46,8 +46,9 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // Weather & Tsunami Warnings adds a toggle-only entry; Volcanoes adds another;
     // Aurora & Space Weather adds a fourth; Aviation Weather adds a fifth;
     // Airspace adds a sixth; Buoys & River Gauges adds a seventh (and trims the
-    // show_data_layers_menu description to make room).
-    '385e73913971194a98d6334ef31613341b4fbe3f6f3d87de8ce8a8ab878d7054',
+    // show_data_layers_menu description to make room); Citizen Air & Radiation
+    // Sensors adds an eighth (and trims three more tool descriptions).
+    'a66515c60888a0729380335c485d343ffcb2d2e5e6bf0f68d6220c215eb48a8a',
   );
 });
 

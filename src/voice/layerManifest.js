@@ -275,6 +275,12 @@ const layers = [
     noQuery: 'buoy and river gauge points',
   },
   {
+    id: 'citizen-sensors',
+    aliases: [],
+    context: false,
+    noQuery: 'air and radiation sensor points',
+  },
+  {
     id: 'weather-cyclones',
     aliases: ['cyclones', 'hurricanes', 'typhoons', 'tropical storms'],
     context: false,

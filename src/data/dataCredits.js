@@ -228,6 +228,13 @@ export const DATA_CREDITS = [
       '<a href="https://www.ndbc.noaa.gov/" target="_blank" rel="noopener">NOAA National Data Buoy Center</a> · ' +
       '<a href="https://water.noaa.gov/" target="_blank" rel="noopener">National Water Prediction Service</a>',
   },
+  {
+    key: 'citizen-sensors',
+    html:
+      'Citizen sensors: ' +
+      '<a href="https://sensor.community/" target="_blank" rel="noopener">Sensor.Community</a> (ODbL) · ' +
+      '<a href="https://safecast.org/" target="_blank" rel="noopener">Safecast</a> (CC0)',
+  },
   OSM_CREDIT,
   OPENMAPTILES_CREDIT,
   {

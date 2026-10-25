@@ -18,6 +18,7 @@ test('data providers have both hooks; credential editing stays development-only'
   assert.ok(plugins.some(({ name }) => name === 'aviation-weather'));
   assert.ok(plugins.some(({ name }) => name === 'airspace'));
   assert.ok(plugins.some(({ name }) => name === 'water-observations'));
+  assert.ok(plugins.some(({ name }) => name === 'citizen-sensors'));
   for (const plugin of plugins) {
     if (plugin.name === 'gev-key-setup') {
       assert.equal(plugin.configurePreviewServer, undefined);
@@ -127,6 +128,8 @@ test('real dev and built-preview servers serve provider JSON and terminate unkno
         ['/api/v1/layers/airspace/unknown', 404],
         ['/api/v1/layers/water-observations/status', 200],
         ['/api/v1/layers/water-observations/unknown', 404],
+        ['/api/v1/layers/citizen-sensors/status', 200],
+        ['/api/v1/layers/citizen-sensors/unknown', 404],
         ['/api/terrain/heights?points=invalid', 400],
         ['/api/overpass', 405],
         ['/api/overpass/status', 200],
@@ -172,6 +175,15 @@ test('real dev and built-preview servers serve provider JSON and terminate unkno
             [
               ['tfr', false],
               ['delays', false],
+            ],
+            route,
+          );
+        if (route === '/api/v1/layers/citizen-sensors/status')
+          assert.deepEqual(
+            body.sources.map(({ id, cached }) => [id, cached]),
+            [
+              ['airpm', false],
+              ['radiation', false],
             ],
             route,
           );

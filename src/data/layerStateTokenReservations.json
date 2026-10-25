@@ -8,6 +8,7 @@
   ["bhote-koshi-locator", "z"],
   ["bikeshare", "b"],
   ["cctv", "c"],
+  ["citizen-sensors", "02"],
   ["directions", "n"],
   ["earthquakes", "e"],
   ["fire-perimeters", "2"],
