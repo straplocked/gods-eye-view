@@ -59,7 +59,12 @@ Each subsource's `fetchSnapshot(context)` receives:
 - `signal`, `now`.
 
 It resolves a FeatureCollection whose features have a non-empty string `id`
-unique within the subsource, and throws on a corrupt payload. Normalizers live
+unique within the subsource, and throws on a corrupt payload. The collection
+may also carry `details`, an object of flat scalars (booleans, finite numbers,
+strings up to 64 characters, at most 8 keys) that the kit copies into that
+subsource's `metadata.sources[]` entry; keys that clash with the kit's own
+(`id`, `ok`, `stale`, `count`, `fetchedAt`, `truncated`, `error`) and structured
+values are dropped. Weather & Tsunami Warnings reports `pendingZones` this way. Normalizers live
 in `src/layers/<family>/records.js` (pure, portable) and mark a corrupt payload
 with `Object.assign(new Error(detail), {code: 'invalid_payload'})`, because a
 portable module cannot import the server kit.
@@ -222,7 +227,10 @@ Read the Global Hazards files as the worked example.
     `src/voice/pointAndAsk.test.mjs` caps instructions plus tools at 52,200
     characters; Global Hazards left about 90 spare, so the next layer needs a
     decision (voice-off in `VOICE_OFF_LAYERS`, `noQuery`, trimming elsewhere,
-    or a deliberate new budget), not a silent raise.
+    or a deliberate new budget), not a silent raise. Weather & Tsunami Warnings
+    chose a toggle-only entry (`noQuery`, two aliases), which fits under the
+    existing ceiling with seven characters to spare (52,193 of 52,200), so the next layer is in
+    the same position.
 11. **Tests**: `records.test.mjs` on hand-written fixtures (valid output via
     `assertValidFeatureCollection`), a proxy test (both hooks, TTL, stale on
     error, byte cap, sanitized 502, no cached empty snapshot, single flight,
@@ -234,9 +242,10 @@ Read the Global Hazards files as the worked example.
 
 ## Keyless layers
 
-| Layer id         | Name           | Subsources (TTL)                   | Route                           | Notes                  |
-| ---------------- | -------------- | ---------------------------------- | ------------------------------- | ---------------------- |
-| `global-hazards` | Global Hazards | `gdacs` (15 min), `eonet` (30 min) | `/api/v1/layers/global-hazards` | First layer on the kit |
+| Layer id           | Name                       | Subsources (TTL)                   | Route                             | Notes                              |
+| ------------------ | -------------------------- | ---------------------------------- | --------------------------------- | ---------------------------------- |
+| `global-hazards`   | Global Hazards             | `gdacs` (15 min), `eonet` (30 min) | `/api/v1/layers/global-hazards`   | First layer on the kit             |
+| `weather-warnings` | Weather & Tsunami Warnings | `nws` (2 min), `tsunami` (5 min)   | `/api/v1/layers/weather-warnings` | NWS zone cache fills progressively |
 
 ### Global Hazards (`global-hazards`, token `5`)
 
@@ -272,3 +281,64 @@ Read the Global Hazards files as the worked example.
   the source link. Caveats: GDACS and EONET overlap (the same cyclone or fire
   can appear once per feed); GDACS areas and tracks are not drawn; alerts are
   informational and not for life-safety decisions.
+
+### Weather & Tsunami Warnings (`weather-warnings`, token `6`)
+
+- **NWS alerts** — `https://api.weather.gov/alerts/active?status=actual`, sent
+  with `Accept: application/geo+json` and the fork's `User-Agent` (the API
+  rejects requests without one). A live sample had 356 alerts, 333 of them with
+  `geometry: null` and only `affectedZones` (495 distinct zone URLs). An alert
+  with its own Polygon/MultiPolygon uses it; otherwise its area is the
+  MultiPolygon of its zones' polygons, fetched from
+  `https://api.weather.gov/zones/<forecast|county|fire|coastal|offshore>/<id>`.
+  Only URLs of that exact shape are ever requested, whatever the alert says.
+  Feature id is the CAP alert id (`urn:oid:…`, so `nws:urn:oid:…` on the wire).
+  Properties: `event`, `severity` (Extreme, Severe, Moderate, Minor, Unknown),
+  `urgency`, `certainty`, `headline`, `areaDesc`, `senderName`, `onset`,
+  `expires` (ISO UTC; `ends` wins over `expires`), `url` (the alert's `web`
+  link read as https, weather.gov only) and `timestamp` (= `sent`). Skipped:
+  non-`Actual` status, already expired, no id, duplicate id.
+- **Zone cache** (`server/providers/nwsZones.js`) — in memory, per server
+  process. Zones are static boundaries, so each is fetched once and kept for 7
+  days (an expired copy is served while it refreshes). Per refresh: at most 150
+  new zone requests (the budget counts failures), four in flight, none started
+  after 30 s, most severe alerts first and, within a severity, alerts with the
+  fewest missing zones first. A zone that answers 404, has no polygon or is over
+  the 2 MiB cap is remembered as "gone" for a day (the alert is drawn from its
+  other zones); any other failure is retried after 5 minutes. The cache is
+  bounded to 6,000 zones. Cold start: with the sample's 495 zones the first
+  request fetches 150, so roughly four refreshes (about eight minutes at the
+  2-minute TTL) are needed before every alert is drawn; the live fetch of all
+  495 took about 3 s from this machine, so refreshes are quick in practice.
+- **Pending alerts** — an alert whose zones are not all resolved is omitted
+  (a partial area would mislead). `metadata.sources[nws]` carries `alerts`,
+  `pendingAlerts`, `pendingZones`, `unmappedAlerts` (alerts left with no area at
+  all) and `tolerance` (the simplification in degrees actually used).
+- **Decimation** — zone rings are simplified (Douglas–Peucker, 0.01°, about
+  1 km) and rounded to 3 decimals before caching; specks smaller than the
+  tolerance and collapsed holes go. The sample's 356 alerts serialized to about
+  1.0 MB (from 90 MB of raw zone JSON). If features exceed 3 MB the tolerance
+  steps to 0.025°, 0.05°, 0.1° (about 11 km, still keeping county-sized zones),
+  and as a last resort the least severe alerts are dropped.
+- **NOAA tsunami** — `https://www.tsunami.gov/events/xml/PAAQAtom.xml` (NTWC,
+  Alaska and the US/Canada coasts) and `PHEBAtom.xml` (PTWC, Pacific and
+  Caribbean). Each feed holds its center's latest bulletin, so bulletins older
+  than three days are dropped rather than shown forever. Parsed with small
+  tag/attribute regexes (no XML dependency); `geo:lat`/`geo:long` (with
+  `georss:point` as a fallback; PHEB writes "28." for 28 degrees). Properties:
+  `title` (the region), `level` (`warning`, `advisory`, `watch`,
+  `information`, from the summary's Category; a PTWC "threat" message reads as
+  `watch`), `center`, `magnitude` and `magnitudeType`, `url` (the `alternate`
+  bulletin link, https on tsunami.gov), `timestamp`. Feature id is
+  `<center>-<entry uuid>`.
+- **Display** — NWS areas are translucent fills colored by severity (the more
+  severe, the heavier the outline); tsunami bulletins are white-ringed points
+  colored by level. Both are clickable; the card shows event or region,
+  severity or level and magnitude, area, onset/expiry or age, issuing office,
+  and opens the weather.gov or tsunami.gov link.
+- **Caveats** — NWS alerts cover the US and its territories only; tsunami
+  bulletins cover the Pacific, Alaska/West Coast and Caribbean centers. Both
+  centers often publish the same quake, so two points can stack at one place.
+  One failing tsunami center fails the whole `tsunami` subsource (the last good
+  snapshot is served flagged stale) rather than hiding a center. The layer is
+  informational and not for life-safety decisions. Voice: toggle only.

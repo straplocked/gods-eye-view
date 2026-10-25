@@ -350,6 +350,8 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // to 52,200 for Global Hazards (52,112 with its toggle, alias hint and
   // analyst fields): the first keyless-feed layer; later ones need a budget
   // decision rather than another silent raise (docs/KEYLESS-FEEDS.md).
+  // Weather & Tsunami Warnings took that decision: toggle-only (noQuery) with
+  // two aliases, which fits under this ceiling without raising it.
   const size = instructions.length + JSON.stringify(GEV_REALTIME_TOOLS).length;
   assert.ok(size <= 52200, `prompt size ${size}`);
 });

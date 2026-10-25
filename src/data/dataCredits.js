@@ -179,6 +179,18 @@ export const DATA_CREDITS = [
       'Natural events: ' +
       '<a href="https://eonet.gsfc.nasa.gov/" target="_blank" rel="noopener">NASA Earth Observatory Natural Event Tracker (EONET)</a>',
   },
+  {
+    key: 'nws-alerts',
+    html:
+      'Weather alerts: ' +
+      '<a href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA National Weather Service</a>',
+  },
+  {
+    key: 'noaa-tsunami',
+    html:
+      'Tsunami bulletins: ' +
+      '<a href="https://www.tsunami.gov/" target="_blank" rel="noopener">NOAA / NWS Tsunami Warning Centers</a>',
+  },
   OSM_CREDIT,
   OPENMAPTILES_CREDIT,
   {

@@ -239,6 +239,12 @@ const layers = [
     },
   },
   {
+    id: 'weather-warnings',
+    aliases: ['weather warnings', 'tsunami'],
+    context: false,
+    noQuery: 'area alerts; no countable records',
+  },
+  {
     id: 'weather-cyclones',
     aliases: ['cyclones', 'hurricanes', 'typhoons', 'tropical storms'],
     context: false,

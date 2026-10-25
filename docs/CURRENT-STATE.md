@@ -3720,6 +3720,7 @@ its criteria cannot be silently ignored.
 | GNSS Integrity 📡 (`gnss-integrity`) | adsb.lol point snapshot, low navigation accuracy binned per 0.5° cell (GEV NIC/NACp threshold + gpsjam.org formula and bands, keyless, ODbL) | `src/layers/gnss/` via `src/app/layers/gnss.js` | `/api/gnss-integrity` | camera-driven (600 ms debounce, minimum 2.5 s between reads) + 60s poll (server cache 60 s; 30 min rolling window) |
 | Fire Perimeters 🔥 | NIFC WFIGS current interagency perimeters (keyless, paged past the 2000-record cap); InciWeb catalog + incident page origin and update time checks for verified incident-page links | `src/layers/perimeters/` via `src/app/layers/perimeters.js` | `/api/fire-perimeters` + `/api/fire-perimeters/inciweb/*` | 5 min (server caches: catalog 1 h; publication 30 min) |
 | Global Hazards ⚠️ (`global-hazards`) | GDACS current events (EQ, TC, FL, VO, DR, WF; one MAP list per type) + NASA EONET open events (30 days); keyless, one point (or EONET area) per event | `src/layers/globalHazards/` via `src/app/layers/globalHazards.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/global-hazards` (+ `/status`) | 15 min (server caches: GDACS 15 min, EONET 30 min) |
+| Weather & Tsunami Warnings ⛈️ (`weather-warnings`) | NWS active alerts (areas: the alert polygon, or the union of its NWS zones from a 7-day zone cache) + NOAA tsunami.gov bulletins (PAAQ, PHEB; one point each); keyless | `src/layers/weatherWarnings/` via `src/app/layers/weatherWarnings.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/weather-warnings` (+ `/status`) | 2 min (server caches: NWS 2 min, tsunami 5 min) |
 
 GNSS Integrity samples a 250 nm circle around the Earth point under the screen
 centre. Camera reads debounce for 600 ms with a monotonic 2.5 s minimum gap;
@@ -3761,6 +3762,29 @@ without refetching, and a click opens a card (type, alert level, place,
 severity, times) whose click-through opens the GDACS report or EONET's source
 page (https only). Only point picks are registered as owned, so large areas do
 not block sibling cards. GDACS polygons and cyclone tracks are not drawn.
+
+Weather & Tsunami Warnings (`weather-warnings`, layer token `6`) is the second
+layer on that kit. The `nws` subsource reads `api.weather.gov/alerts/active`
+(`status=actual`, GeoJSON, with the fork's `User-Agent`): an alert that carries
+a polygon uses it, and the larger part that carry only `affectedZones` take
+their area from the zone resources they list. Zones are static, so
+`server/providers/nwsZones.js` fetches each once (four at a time, at most 150
+new per refresh and none after 30 s), simplifies it to about 1 km and keeps it
+for 7 days; a missing zone is remembered as gone for a day, a failing one
+retried after 5 minutes. Severe alerts get their zones first. An alert is shown
+only when all its zones are resolved, so the map fills in over the first few
+refreshes; `metadata.sources[nws]` reports `pendingAlerts`, `pendingZones` and
+`unmappedAlerts`. The payload targets 3 MB: geometry is coarsened in steps
+(1 km up to 11 km) and, as a last resort, the least severe alerts are dropped.
+The `tsunami` subsource reads both tsunami.gov Atom feeds (a small tag parser,
+no dependency): one point per bulletin from `geo:lat`/`geo:long`, level from
+the summary category, bulletins over three days old dropped; one failing
+center fails the subsource so the previous snapshot is served flagged stale.
+Areas are coloured by CAP severity, tsunami points by level; a click opens a
+card (event, severity, urgency, area, onset/expiry, issuing office) that opens
+the weather.gov or tsunami.gov link. Voice: toggle only ("weather warnings",
+"tsunami"); analyst queries were left out to stay inside the voice prompt
+budget.
 
 Street Level is a docked, collapsible right-rail panel (`#street-level-panel`,
 layer token `0`, option owner `street-level`, panel `ui` token `t`) that starts
