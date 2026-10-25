@@ -1089,5 +1089,16 @@
   "scripts/qa-status-badges.mjs",
   "src/dockerTrustedPeers.test.mjs",
   "src/cameraGlobeRotation.test.mjs",
-  "src/voice/globeResetConfirmation.test.mjs"
+  "src/voice/globeResetConfirmation.test.mjs",
+  "docs/KEYLESS-FEEDS.md",
+  "server/providers/common/keylessFeed.test.mjs",
+  "src/data/globalHazardsProxy.test.mjs",
+  "src/layers/common/geojson.test.mjs",
+  "src/layers/common/featureModel.test.mjs",
+  "src/layers/globalHazards/records.test.mjs",
+  "src/layers/globalHazards/source.test.mjs",
+  "src/layers/globalHazards/cards.test.mjs",
+  "src/layers/globalHazards/ownership.test.mjs",
+  "src/testSupport/geojson.mjs",
+  "src/testSupport/globalHazardsFixtures.mjs"
 ]

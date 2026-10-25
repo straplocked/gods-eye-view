@@ -11,6 +11,7 @@ test('data providers have both hooks; credential editing stays development-only'
   const plugins = localProviderPlugins();
   assert.ok(plugins.some(({ name }) => name === 'fire-perimeters'));
   assert.ok(plugins.some(({ name }) => name === 'gnss-integrity'));
+  assert.ok(plugins.some(({ name }) => name === 'global-hazards'));
   for (const plugin of plugins) {
     if (plugin.name === 'gev-key-setup') {
       assert.equal(plugin.configurePreviewServer, undefined);
@@ -105,6 +106,9 @@ test('real dev and built-preview servers serve provider JSON and terminate unkno
         ['/api/firms/status', 200],
         ['/api/fire-perimeters/inciweb/publication/invalid', 400],
         ['/api/gnss-integrity?lat=invalid', 400],
+        // Keyless layer kit: the status route reads the cache, never upstream.
+        ['/api/v1/layers/global-hazards/status', 200],
+        ['/api/v1/layers/global-hazards/unknown', 404],
         ['/api/terrain/heights?points=invalid', 400],
         ['/api/overpass', 405],
         ['/api/overpass/status', 200],
@@ -135,6 +139,15 @@ test('real dev and built-preview servers serve provider JSON and terminate unkno
         const body = await response.json();
         if (route === '/api/cctv/sources')
           assert.equal(body.sources[0].id, 'fixture');
+        if (route === '/api/v1/layers/global-hazards/status')
+          assert.deepEqual(
+            body.sources.map(({ id, cached }) => [id, cached]),
+            [
+              ['gdacs', false],
+              ['eonet', false],
+            ],
+            route,
+          );
         if (route === '/api/mapillary/status')
           assert.deepEqual(body, { configured: false }, route);
         if (route.startsWith('/api/mapillary/tiles'))

@@ -3719,6 +3719,7 @@ its criteria cannot be silently ignored.
 | Wind 🌬                 | NOAA GFS 10 m wind (keyless, 0.25°→1° grid; animated particles)                                                                                                                                 | `src/data/wind.js`                                    | `/api/wind`                                              | 1 h (forecast cycle)                                                              |
 | GNSS Integrity 📡 (`gnss-integrity`) | adsb.lol point snapshot, low navigation accuracy binned per 0.5° cell (GEV NIC/NACp threshold + gpsjam.org formula and bands, keyless, ODbL) | `src/layers/gnss/` via `src/app/layers/gnss.js` | `/api/gnss-integrity` | camera-driven (600 ms debounce, minimum 2.5 s between reads) + 60s poll (server cache 60 s; 30 min rolling window) |
 | Fire Perimeters 🔥 | NIFC WFIGS current interagency perimeters (keyless, paged past the 2000-record cap); InciWeb catalog + incident page origin and update time checks for verified incident-page links | `src/layers/perimeters/` via `src/app/layers/perimeters.js` | `/api/fire-perimeters` + `/api/fire-perimeters/inciweb/*` | 5 min (server caches: catalog 1 h; publication 30 min) |
+| Global Hazards ⚠️ (`global-hazards`) | GDACS current events (EQ, TC, FL, VO, DR, WF; one MAP list per type) + NASA EONET open events (30 days); keyless, one point (or EONET area) per event | `src/layers/globalHazards/` via `src/app/layers/globalHazards.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/global-hazards` (+ `/status`) | 15 min (server caches: GDACS 15 min, EONET 30 min) |
 
 GNSS Integrity samples a 250 nm circle around the Earth point under the screen
 centre. Camera reads debounce for 600 ms with a monotonic 2.5 s minimum gap;
@@ -3746,6 +3747,20 @@ by `scripts/qa-emergency-squawk.mjs`. Both accept `--timeout-ms` for slow boot.
 
 
 Fire Perimeters uses capped, timed server reads with stale-on-error caching and a per-client limit. Unchanged snapshots retain geometry; link checks cancel on disable or selection change, and the row legend shows reported containment.
+
+Global Hazards is the first layer on the keyless layer kit
+([docs/KEYLESS-FEEDS.md](KEYLESS-FEEDS.md)): `server/providers/common/keylessFeed.js`
+serves `/api/v1/layers/<id>` as one GeoJSON FeatureCollection built from
+independent subsources, each with its own TTL, stale-on-error cache, single-flight
+refresh, 60 s failure backoff and byte caps. A corrupt payload is never cached;
+one failing subsource leaves the others on screen and is named in `metadata`
+and the row ("GDACS feed unavailable"); only all-failed-and-uncached answers 502.
+The client (`src/layers/common/featureLayer.js`) draws clamped points and
+outlined areas, one chip per feed (GDACS, NASA EONET) hides or shows a feed
+without refetching, and a click opens a card (type, alert level, place,
+severity, times) whose click-through opens the GDACS report or EONET's source
+page (https only). Only point picks are registered as owned, so large areas do
+not block sibling cards. GDACS polygons and cyclone tracks are not drawn.
 
 Street Level is a docked, collapsible right-rail panel (`#street-level-panel`,
 layer token `0`, option owner `street-level`, panel `ui` token `t`) that starts
