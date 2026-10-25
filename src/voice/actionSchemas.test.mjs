@@ -47,8 +47,9 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // Aurora & Space Weather adds a fourth; Aviation Weather adds a fifth;
     // Airspace adds a sixth; Buoys & River Gauges adds a seventh (and trims the
     // show_data_layers_menu description to make room); Citizen Air & Radiation
-    // Sensors adds an eighth (and trims three more tool descriptions).
-    'a66515c60888a0729380335c485d343ffcb2d2e5e6bf0f68d6220c215eb48a8a',
+    // Sensors adds an eighth (and trims three more tool descriptions); Internet
+    // Outages & Data Centers adds a ninth (and trims the rangeM description).
+    '2bd50c41411bd6cfcda29c069bba6ea6e6345242940a127a2e87620adc7f819d',
   );
 });
 

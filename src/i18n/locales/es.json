@@ -3189,5 +3189,38 @@
   "Radiation ≈ {usv} µSv/h": "Radiación ≈ {usv} µSv/h",
   "Radiation {usv} µSv/h": "Radiación {usv} µSv/h",
   "Dots with a black outline are outdoor Sensor.Community particulate sensors, the median PM2.5 of each 0.1° cell, colored by US EPA air quality category. Dots with a white ring are the latest Safecast radiation reading of each device in the last six hours; counts per minute are converted to µSv/h at a nominal factor, so treat them as estimates. Citizen-built sensors: informational only.": "Los puntos con borde negro son sensores de partículas Sensor.Community al aire libre: la mediana de PM2.5 de cada celda de 0,1°, coloreada según la categoría de calidad del aire de la EPA de EE. UU. Los puntos con un anillo blanco son la última lectura de radiación de Safecast de cada dispositivo en las últimas seis horas; las cuentas por minuto se convierten a µSv/h con un factor nominal, así que son estimaciones. Sensores ciudadanos: solo informativo.",
-  "Citizen Air & Radiation Sensors": "Sensores ciudadanos de aire y radiación"
+  "Citizen Air & Radiation Sensors": "Sensores ciudadanos de aire y radiación",
+  "Critical outage": "Corte crítico",
+  "Outage warning": "Aviso de corte",
+  "Recovered in the last 24 h": "Recuperado en las últimas 24 h",
+  "BGP routing": "Enrutamiento BGP",
+  "Active probing": "Sondeo activo",
+  "Google traffic": "Tráfico de Google",
+  "Network telescope": "Telescopio de red",
+  "Outages": "Cortes",
+  "Data centers": "Centros de datos",
+  "Regions: {regions}": "Regiones: {regions}",
+  "Recovered: connectivity is back to normal": "Recuperado: la conectividad volvió a la normalidad",
+  "Connectivity dropped inside the country, not country-wide": "La conectividad cayó dentro del país, no en todo el país",
+  "Critical drop in connectivity": "Caída crítica de la conectividad",
+  "Warning-level drop in connectivity": "Caída de la conectividad en nivel de aviso",
+  "Detected by {sources}": "Detectado por {sources}",
+  "started {age} ago": "comenzó hace {age}",
+  "ended {age} ago": "terminó hace {age}",
+  "Marker at the country centre: IODA reports countries, not places": "Marcador en el centro del país: IODA informa de países, no de lugares",
+  "Georgia Tech IODA": "Georgia Tech IODA",
+  "{count} networks": {
+    "one": "{count} red",
+    "many": "{count} de redes",
+    "other": "{count} redes"
+  },
+  "{count} exchanges": {
+    "one": "{count} punto de intercambio",
+    "many": "{count} de puntos de intercambio",
+    "other": "{count} puntos de intercambio"
+  },
+  "PeeringDB": "PeeringDB",
+  "Data center or network facility": "Centro de datos o instalación de red",
+  "Red and orange markers are countries where Georgia Tech IODA sees internet connectivity dropping, drawn at the country centre because IODA reports countries, not places; green ones recovered in the last 24 hours. Cyan dots are data centers and interconnection facilities listed in PeeringDB. IODA signals can raise false alarms: not proof of an outage.": "Los marcadores rojos y naranjas son países donde Georgia Tech IODA ve caer la conectividad de Internet, dibujados en el centro del país porque IODA informa de países, no de lugares; los verdes se recuperaron en las últimas 24 horas. Los puntos cian son centros de datos e instalaciones de interconexión de PeeringDB. Las señales de IODA pueden dar falsas alarmas: no son prueba de un corte.",
+  "Internet Outages & Data Centers": "Cortes de Internet y centros de datos"
 }

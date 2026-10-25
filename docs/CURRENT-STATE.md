@@ -3726,6 +3726,7 @@ its criteria cannot be silently ignored.
 | Airspace Restrictions & Airport Delays 🚧 (`airspace`) | FAA Temporary Flight Restrictions (list + one XNOTAM download per TFR for the geometry; circles and arcs built into polygons) + FAA NAS Status airport delays (ground stops, ground delay programs, arrival/departure delays, closures) as points at AWC-resolved airport positions; keyless | `src/layers/airspace/` via `src/app/layers/airspace.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/airspace` (+ `/status`) | 5 min (server caches: tfr list 10 min and each TFR's geometry until it leaves the list, delays 5 min, airport positions 7 days) |
 | Buoys & River Gauges 🌊 (`water-observations`) | NOAA NDBC latest observations (buoys and coastal stations, points colored by wind speed) + NWPS river gauges at or above flood action stage (observed or forecast; fetched in eight bounding-box tiles); keyless | `src/layers/waterObservations/` via `src/app/layers/waterObservations.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/water-observations` (+ `/status`) | 15 min (server caches: buoys 15 min, rivers 15 min) |
 | Citizen Air & Radiation Sensors ☢️ (`citizen-sensors`) | Sensor.Community outdoor particulate sensors binned to a 0.1° grid (median PM2.5 per cell, colored by US EPA AQI category) + the latest Safecast radiation reading of each device in the last 6 hours (cpm or µSv/h, colored by dose rate); keyless | `src/layers/citizenSensors/` via `src/app/layers/citizenSensors.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/citizen-sensors` (+ `/status`) | 10 min (server caches: particulates 10 min, radiation 30 min) |
+| Internet Outages & Data Centers 🌐 (`internet-infrastructure`) | Georgia Tech IODA internet outage alerts as one marker per country (going now or ended in the last 24 hours, colored by level, at a hand-written country position) + PeeringDB data center and interconnection facilities as points sized by the networks present; keyless | `src/layers/internetInfrastructure/` via `src/app/layers/internetInfrastructure.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/internet-infrastructure` (+ `/status`) | 10 min (server caches: outages 10 min, data centers 24 h) |
 | Weather & Tsunami Warnings ⛈️ (`weather-warnings`) | NWS active alerts (areas: the alert polygon, or the union of its NWS zones from a 7-day zone cache) + NOAA tsunami.gov bulletins (PAAQ, PHEB; one point each); keyless | `src/layers/weatherWarnings/` via `src/app/layers/weatherWarnings.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/weather-warnings` (+ `/status`) | 2 min (server caches: NWS 2 min, tsunami 5 min) |
 
 GNSS Integrity samples a 250 nm circle around the Earth point under the screen
@@ -3915,6 +3916,27 @@ one dot per device colored by dose rate. A cpm reading is converted at a nominal
 334 cpm per µSv/h and flagged as an estimate on the card. Particulates are
 cached 10 minutes, radiation 30. Citizen-built, uncalibrated sensors:
 informational only. Voice: toggle only.
+
+Internet Outages & Data Centers (`internet-infrastructure`, layer token `03`) is
+the ninth layer on the kit, in the Infrastructure group of the Layers panel. The
+`outages` subsource reads Georgia Tech's IODA alert API twice (countries with a
+14-day lookback so an outage that is still going is found, regions for the last
+24 hours) and turns the alerts, which are state changes of one signal (BGP,
+active probing, Google traffic, network telescope), into one marker per country:
+going now, or recovered in the last 24 hours. IODA gives countries, not
+coordinates, so each marker sits at a hand-written country position (all 251
+placeable IODA codes, in `countryCentroids.js`); a region outage with no
+country-wide signal marks its country and names the regions. If only the region
+request fails, the country markers still serve. The `datacenters` subsource
+reads PeeringDB's whole facility list in one request (1.6 MB with a field list;
+5,279 of 5,886 have a position, the rest are skipped, never put at 0,0) and
+caches it for 24 hours. PeeringDB's Acceptable Use Policy restricts bulk
+redistribution, so this layer suits one operator's own use; a public deployment
+needs PeeringDB's permission or the feed turned off (see DATA_SOURCES.md).
+Markers are signals, not confirmed outages: informational only. Voice: toggle
+only; the 23-character id cost 52 characters of the Realtime prompt, so the
+`fly_to_location` `rangeM` description was trimmed by 59 characters instead of
+raising the ceiling.
 
 Street Level is a docked, collapsible right-rail panel (`#street-level-panel`,
 layer token `0`, option owner `street-level`, panel `ui` token `t`) that starts

@@ -42,6 +42,7 @@ export const LAYER_NAME_KEYS = Object.freeze({
   airspace: msg('Airspace Restrictions & Airport Delays'),
   'water-observations': msg('Buoys & River Gauges'),
   'citizen-sensors': msg('Citizen Air & Radiation Sensors'),
+  'internet-infrastructure': msg('Internet Outages & Data Centers'),
   wind: msg('Wind'),
   'weather-radar': msg('Rain radar'),
   'weather-satellite': msg('Satellite clouds'),

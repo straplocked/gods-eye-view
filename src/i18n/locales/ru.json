@@ -3257,5 +3257,40 @@
   "Radiation ≈ {usv} µSv/h": "Радиация ≈ {usv} мкЗв/ч",
   "Radiation {usv} µSv/h": "Радиация {usv} мкЗв/ч",
   "Dots with a black outline are outdoor Sensor.Community particulate sensors, the median PM2.5 of each 0.1° cell, colored by US EPA air quality category. Dots with a white ring are the latest Safecast radiation reading of each device in the last six hours; counts per minute are converted to µSv/h at a nominal factor, so treat them as estimates. Citizen-built sensors: informational only.": "Точки с чёрным контуром — уличные датчики частиц Sensor.Community: медиана PM2.5 в каждой ячейке 0,1°, цвет по категории качества воздуха Агентства по охране окружающей среды США. Точки с белым кольцом — последнее показание радиации Safecast от каждого устройства за последние шесть часов; импульсы в минуту переводятся в мкЗв/ч по номинальному коэффициенту, поэтому это оценки. Гражданские датчики: только для информации.",
-  "Citizen Air & Radiation Sensors": "Гражданские датчики воздуха и радиации"
+  "Citizen Air & Radiation Sensors": "Гражданские датчики воздуха и радиации",
+  "Critical outage": "Критический сбой",
+  "Outage warning": "Предупреждение о сбое",
+  "Recovered in the last 24 h": "Восстановлено за последние 24 ч",
+  "BGP routing": "BGP-маршрутизация",
+  "Active probing": "Активное зондирование",
+  "Google traffic": "Трафик Google",
+  "Network telescope": "Сетевой телескоп",
+  "Outages": "Сбои",
+  "Data centers": "Дата-центры",
+  "Regions: {regions}": "Регионы: {regions}",
+  "Recovered: connectivity is back to normal": "Восстановлено: связь в норме",
+  "Connectivity dropped inside the country, not country-wide": "Связь упала внутри страны, но не по всей стране",
+  "Critical drop in connectivity": "Критическое падение связности",
+  "Warning-level drop in connectivity": "Падение связности до уровня предупреждения",
+  "Detected by {sources}": "Обнаружено: {sources}",
+  "started {age} ago": "началось {age} назад",
+  "ended {age} ago": "закончилось {age} назад",
+  "Marker at the country centre: IODA reports countries, not places": "Метка в центре страны: IODA сообщает о странах, а не о местах",
+  "Georgia Tech IODA": "Georgia Tech IODA",
+  "{count} networks": {
+    "one": "{count} сеть",
+    "few": "{count} сети",
+    "many": "{count} сетей",
+    "other": "{count} сети"
+  },
+  "{count} exchanges": {
+    "one": "{count} точка обмена",
+    "few": "{count} точки обмена",
+    "many": "{count} точек обмена",
+    "other": "{count} точки обмена"
+  },
+  "PeeringDB": "PeeringDB",
+  "Data center or network facility": "Дата-центр или сетевой узел",
+  "Red and orange markers are countries where Georgia Tech IODA sees internet connectivity dropping, drawn at the country centre because IODA reports countries, not places; green ones recovered in the last 24 hours. Cyan dots are data centers and interconnection facilities listed in PeeringDB. IODA signals can raise false alarms: not proof of an outage.": "Красные и оранжевые метки — страны, где Georgia Tech IODA видит падение связности интернета; они нарисованы в центре страны, потому что IODA сообщает о странах, а не о местах; зелёные восстановились за последние 24 часа. Голубые точки — дата-центры и узлы взаимодействия из PeeringDB. Сигналы IODA могут давать ложные тревоги: это не доказательство сбоя.",
+  "Internet Outages & Data Centers": "Сбои интернета и дата-центры"
 }

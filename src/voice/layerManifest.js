@@ -281,6 +281,12 @@ const layers = [
     noQuery: 'air and radiation sensor points',
   },
   {
+    id: 'internet-infrastructure',
+    aliases: [],
+    context: false,
+    noQuery: 'outage markers and data center points',
+  },
+  {
     id: 'weather-cyclones',
     aliases: ['cyclones', 'hurricanes', 'typhoons', 'tropical storms'],
     context: false,

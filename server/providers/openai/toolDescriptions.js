@@ -31,7 +31,7 @@ export const ACTION_DESCRIPTIONS = {
         },
         rangeM: {
           description:
-            'Optional camera range from the target in meters. Omit it for automatic whole-country/whole-city or close-landmark framing; provide it only when the user explicitly requests a numeric height or distance.',
+            'Optional camera range in meters. Omit it for automatic framing; provide it only when the user explicitly requests a numeric height or distance.',
           $position: 3,
         },
         waitForArrival: {
