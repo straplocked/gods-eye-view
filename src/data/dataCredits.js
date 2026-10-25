@@ -221,6 +221,13 @@ export const DATA_CREDITS = [
       'Flight restrictions and airport delays: ' +
       '<a href="https://tfr.faa.gov/" target="_blank" rel="noopener">FAA</a>',
   },
+  {
+    key: 'noaa-water-observations',
+    html:
+      'Buoys and river gauges: ' +
+      '<a href="https://www.ndbc.noaa.gov/" target="_blank" rel="noopener">NOAA National Data Buoy Center</a> · ' +
+      '<a href="https://water.noaa.gov/" target="_blank" rel="noopener">National Water Prediction Service</a>',
+  },
   OSM_CREDIT,
   OPENMAPTILES_CREDIT,
   {

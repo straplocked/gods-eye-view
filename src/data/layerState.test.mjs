@@ -202,8 +202,8 @@ function encode(state) {
 
 test('production registry is exact, canonical, and rejects incomplete contracts', async () => {
   assert.equal(validateLayerStateRegistry(), true);
-  assert.equal(REGISTERED_LAYER_IDS.length, 37);
-  assert.equal(new Set(REGISTERED_LAYER_IDS).size, 37);
+  assert.equal(REGISTERED_LAYER_IDS.length, 38);
+  assert.equal(new Set(REGISTERED_LAYER_IDS).size, 38);
   assert.ok(REGISTERED_LAYER_IDS.includes('transit'));
   assert.deepEqual(REGISTERED_LAYER_IDS, [...REGISTERED_LAYER_IDS].sort());
   assert.deepEqual(LEGACY_LAYER_STATE_TOKENS, {
@@ -242,21 +242,22 @@ test('production registry is exact, canonical, and rejects incomplete contracts'
   for (const [id, token] of Object.entries(LEGACY_LAYER_STATE_TOKENS)) {
     assert.equal(LAYER_STATE_TOKEN_RESERVATIONS[id], token);
   }
-  // Aviation Weather took the last free digit (9) and Airspace the first
-  // two-character pair (00): the next token is 01.
-  assert.equal(nextLayerStateToken(), '01');
+  // Aviation Weather took the last free digit (9), Airspace the first
+  // two-character pair (00) and Buoys & River Gauges the second (01): the
+  // next token is 02.
+  assert.equal(nextLayerStateToken(), '02');
   assert.equal(
     nextLayerStateToken({
       ...LAYER_STATE_TOKEN_RESERVATIONS,
-      alpha: '01',
+      alpha: '02',
     }),
-    '02',
+    '03',
   );
   const digitsExhausted = { ...LAYER_STATE_TOKEN_RESERVATIONS };
-  assert.equal(nextLayerStateToken(digitsExhausted), '01');
+  assert.equal(nextLayerStateToken(digitsExhausted), '02');
   assert.equal(
-    nextLayerStateToken({ ...digitsExhausted, retired: '01', used: '02' }),
-    '03',
+    nextLayerStateToken({ ...digitsExhausted, retired: '02', used: '03' }),
+    '04',
   );
   assert.equal(
     nextLayerStateToken({
@@ -303,8 +304,8 @@ test('production registry is exact, canonical, and rejects incomplete contracts'
   assert.equal(
     validateLayerStateAllocations(LAYER_STATE_TOKEN_RESERVATIONS, {
       ...LAYER_STATE_TOKEN_RESERVATIONS,
-      future: '01',
-      next: '02',
+      future: '02',
+      next: '03',
     }),
     true,
   );
@@ -312,15 +313,17 @@ test('production registry is exact, canonical, and rejects incomplete contracts'
     () =>
       validateLayerStateAllocations(LAYER_STATE_TOKEN_RESERVATIONS, {
         ...LAYER_STATE_TOKEN_RESERVATIONS,
-        future: '02',
+        future: '03',
       }),
-    /next free token 01/,
+    /next free token 02/,
   );
   // Before Aviation Weather took it, 9 was the last free digit (and 00 was
-  // the first free pair, before Airspace took it).
+  // the first free pair, before Airspace took it, and 01 the next, before
+  // Buoys & River Gauges took it).
   const beforeLastDigit = { ...digitsExhausted };
   delete beforeLastDigit['aviation-weather'];
   delete beforeLastDigit.airspace;
+  delete beforeLastDigit['water-observations'];
   assert.equal(
     validateLayerStateAllocations(beforeLastDigit, {
       ...beforeLastDigit,
@@ -332,18 +335,18 @@ test('production registry is exact, canonical, and rejects incomplete contracts'
   assert.equal(
     validateLayerStateAllocations(digitsExhausted, {
       ...digitsExhausted,
-      pairB: '02',
-      pairA: '01',
+      pairB: '03',
+      pairA: '02',
     }),
     true,
   );
   assert.throws(
     () =>
       validateLayerStateAllocations(
-        { ...LAYER_STATE_TOKEN_RESERVATIONS, merged: '01' },
-        { ...LAYER_STATE_TOKEN_RESERVATIONS, merged: '01', competing: '01' },
+        { ...LAYER_STATE_TOKEN_RESERVATIONS, merged: '02' },
+        { ...LAYER_STATE_TOKEN_RESERVATIONS, merged: '02', competing: '02' },
       ),
-    /next free token 02/,
+    /next free token 03/,
   );
   assert.throws(
     () => validateLayerStateAllocations({ future: '00' }, { future: '01' }),
@@ -499,7 +502,7 @@ test('unknown enabled-layer tokens reject the payload instead of becoming an emp
 });
 
 test('malformed enabled-layer lists reject the entire payload', () => {
-  for (const value of ['.c', 'c.', 'c..e', 'c.c', '01', 'c.01']) {
+  for (const value of ['.c', 'c.', 'c..e', 'c.c', '02', 'c.02']) {
     assert.equal(
       decodeLayerStateParams(new URLSearchParams(`v=2&l=${value}`)),
       null,

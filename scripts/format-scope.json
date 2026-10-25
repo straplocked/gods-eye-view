@@ -1132,5 +1132,11 @@
   "src/layers/airspace/source.test.mjs",
   "src/layers/airspace/cards.test.mjs",
   "src/layers/airspace/ownership.test.mjs",
-  "src/testSupport/airspaceFixtures.mjs"
+  "src/testSupport/airspaceFixtures.mjs",
+  "src/data/waterObservationsProxy.test.mjs",
+  "src/layers/waterObservations/records.test.mjs",
+  "src/layers/waterObservations/source.test.mjs",
+  "src/layers/waterObservations/cards.test.mjs",
+  "src/layers/waterObservations/ownership.test.mjs",
+  "src/testSupport/waterObservationsFixtures.mjs"
 ]

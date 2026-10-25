@@ -282,14 +282,15 @@ Read the Global Hazards files as the worked example.
 
 ## Keyless layers
 
-| Layer id           | Name                                   | Subsources (TTL)                          | Route                             | Notes                               |
-| ------------------ | -------------------------------------- | ----------------------------------------- | --------------------------------- | ----------------------------------- |
-| `global-hazards`   | Global Hazards                         | `gdacs` (15 min), `eonet` (30 min)        | `/api/v1/layers/global-hazards`   | First layer on the kit              |
-| `weather-warnings` | Weather & Tsunami Warnings             | `nws` (2 min), `tsunami` (5 min)          | `/api/v1/layers/weather-warnings` | NWS zone cache fills progressively  |
-| `volcanoes`        | Volcanoes                              | `gvp` (6 h), `usgs` (10 min)              | `/api/v1/layers/volcanoes`        | Joins a volcano in both feeds       |
-| `space-weather`    | Aurora & Space Weather                 | `aurora` (5 min), `kp` (15 min)           | `/api/v1/layers/space-weather`    | Kp rides in metadata, no features   |
-| `aviation-weather` | Aviation Weather                       | `metar`, `sigmet`, `isigmet` (5 min each) | `/api/v1/layers/aviation-weather` | About 5,100 METAR points, 2 MB      |
-| `airspace`         | Airspace Restrictions & Airport Delays | `tfr` (10 min), `delays` (5 min)          | `/api/v1/layers/airspace`         | One XNOTAM download per TFR, cached |
+| Layer id             | Name                                   | Subsources (TTL)                          | Route                               | Notes                                     |
+| -------------------- | -------------------------------------- | ----------------------------------------- | ----------------------------------- | ----------------------------------------- |
+| `global-hazards`     | Global Hazards                         | `gdacs` (15 min), `eonet` (30 min)        | `/api/v1/layers/global-hazards`     | First layer on the kit                    |
+| `weather-warnings`   | Weather & Tsunami Warnings             | `nws` (2 min), `tsunami` (5 min)          | `/api/v1/layers/weather-warnings`   | NWS zone cache fills progressively        |
+| `volcanoes`          | Volcanoes                              | `gvp` (6 h), `usgs` (10 min)              | `/api/v1/layers/volcanoes`          | Joins a volcano in both feeds             |
+| `space-weather`      | Aurora & Space Weather                 | `aurora` (5 min), `kp` (15 min)           | `/api/v1/layers/space-weather`      | Kp rides in metadata, no features         |
+| `aviation-weather`   | Aviation Weather                       | `metar`, `sigmet`, `isigmet` (5 min each) | `/api/v1/layers/aviation-weather`   | About 5,100 METAR points, 2 MB            |
+| `airspace`           | Airspace Restrictions & Airport Delays | `tfr` (10 min), `delays` (5 min)          | `/api/v1/layers/airspace`           | One XNOTAM download per TFR, cached       |
+| `water-observations` | Buoys & River Gauges                   | `buoys`, `rivers` (15 min each)           | `/api/v1/layers/water-observations` | NWPS fetched in 8 bbox tiles, 3 at a time |
 
 ### Global Hazards (`global-hazards`, token `5`)
 
@@ -687,3 +688,79 @@ kpMax24h}` (`kpMax24h` = highest of the 8 latest rows) next to the kit's own
   is sent on every request. The airport table covers the airports the FAA lists
   today; an unlisted territory airport is simply not drawn. Informational only:
   the NOTAM text governs; not for flight planning. Voice: toggle only (no alias).
+
+### Buoys & River Gauges (`water-observations`, token `01`)
+
+- **Buoys** — `https://www.ndbc.noaa.gov/data/latest_obs/latest_obs.txt` (about
+  100 KB; 852 stations in the sample, 861 later the same day). Whitespace
+  delimited: a `#STN LAT LON YYYY MM DD hh mm WDIR WSPD GST WVHT DPD APD MWD
+PRES PTDY ATMP WTMP DEWP VIS TIDE` header, a `#text` units line, then one row
+  per station. `MM` means "not reported" and becomes `null` (never 0 or NaN: a
+  calm 0.0 m/s is a reading, a missing anemometer is not). Columns are located
+  by name from the header, so a reordered or extended file still parses; the
+  `+0.0` tendency spelling is read as a number. Time is `YYYY MM DD hh mm` UTC,
+  checked to be a real calendar time. A row is skipped when its station id is
+  not 3 to 8 letters or digits, its position is non-finite, out of range or
+  exactly 0,0, its time is not real, older than 6 hours or more than an hour
+  ahead of the server clock, its column count differs from the header, or no
+  measurement survives. A value outside a plausible range (wind over 120 m/s,
+  pressure outside 850 to 1100 hPa, …) is `null`, the rest of the row kept. A
+  station listed twice keeps its newest row. A file with no `#STN` header, a
+  missing required column, or no usable row is a corrupt payload, never an empty
+  map. TTL 15 minutes (the file refreshes every 10).
+- **Buoy properties** — id = the station id (`buoys:41008` on the wire):
+  `station`, `windDir` (deg true), `windMs`/`windKt`, `gustMs`/`gustKt` (knots
+  are metres per second x 3600 / 1852, rounded to 0.1), `waveM`, `wavePeriodS`,
+  `avgPeriodS`, `waveDir`, `pressureHpa`, `pressureTrendHpa` (3-hour change),
+  `airC`, `waterC`, `dewC`, `visNmi`, `tideFt`, `timestamp` (= observation
+  time). All measurement keys are always present.
+- **Rivers** — `https://api.water.noaa.gov/nwps/v1/gauges`, the National Water
+  Prediction Service gauge list: about 12,950 gauges, each with `lid`, `name`,
+  `state`, `latitude`/`longitude` and `status.observed` / `status.forecast`
+  blocks (`primary`/`secondary` reading with their units, `floodCategory`,
+  `validTime`). Categories seen: `no_flooding` 7,056, `not_defined` 4,081,
+  `obs_not_current` 1,028, `out_of_service` 617, `low_threshold` 70, `action`
+  52, `minor` 33, `moderate` 9, `major` 3 (observed, one day in October); a
+  gauge is kept when the observed **or** the forecast category is `action`,
+  `minor`, `moderate` or `major` (168 that day). **Why tiles:** the unfiltered
+  list is 13 MB and took 41 s once and a 504 at 60 s the next time, and the
+  service has no category filter; a bounding box (`bbox.xmin`, `ymin`, `xmax`,
+  `ymax`, `srid=EPSG_4326`) is answered in 3 to 15 s. Eight fixed boxes cover
+  every gauge with a position: one for Alaska and Hawaii (longitude -180 to
+  -135), then strips -135 to -120, -120 to -105, -105 to -90 (split at latitude
+  35), -90 to -75 (split at latitude 34) and -75 to -60 (with Puerto Rico and
+  the Virgin Islands). They share their edges and are de-duplicated by id. They
+  are fetched three at a time, a tile answering an HTTP error is asked once more,
+  and one tile still failing fails the whole `rivers` subsource (timeout 120 s),
+  so the last good snapshot is served stale rather than a map missing a region.
+  If the tiles together list fewer than 1,000 gauges the answer is treated as
+  broken (`invalid_payload`), so a service that answers empty lists cannot
+  become "no flooding anywhere". No gauge at or above action stage, with the
+  full list present, is a normal cached empty snapshot. Gauges published at
+  0,0 (a few have no position) and gauges with a malformed id are skipped.
+- **River properties** — id = the NWS location id (`rivers:ASTF1`): `gauge`,
+  `name`, `state`, `category` (observed: `action`, `minor`, `moderate`, `major`
+  or `null`), `forecastCategory` (same), `stageFt`, `flowKcfs` (taken by unit,
+  because a few gauges report flow as the primary reading; -999 means none and
+  becomes `null`), `forecastStageFt`, `timestamp` (= the observation time, `null`
+  for the year-1 placeholder).
+- **Not shipped** — USGS Water Services instantaneous values were the planned
+  fallback and are not used: NWPS answered once tiled, and USGS carries no flood
+  categories (it would need per-state requests and a threshold table).
+- **Display** — buoys are dots on the ellipsoid colored by sustained wind
+  (under 11, 11 to 21, 22 to 33, 34 to 47, 48 kt and over; grey when not
+  reported) and 5 to 9 px by wave height; gauges are 9 to 12 px dots colored by
+  the worse of the observed and forecast category (yellow action, orange
+  minor, red moderate, magenta major), with a white ring while flooding now and
+  a dark ring when only the forecast reaches action stage. A click opens a card
+  (buoy: wind in knots, waves, pressure and change, air, water and dew point,
+  visibility, tide, age; gauge: gauge id and state, category now, stage and
+  flow, forecast category and stage, age) that opens the NDBC station page or
+  the water.noaa.gov gauge page. The row has a chip per feed and a legend.
+- **Caveats** — two upstream hosts, both keyless. Route body about 0.4 MB for
+  the buoys plus a few tens of KB for the gauges. One refresh of the rivers
+  feed is eight requests and about 13 MB downloaded; the kit's user agent is
+  sent on each. NDBC reports are real-time and not quality-reviewed; flood
+  categories are the NWS's own. Informational only: not for navigation, and not
+  a flood warning. Voice: toggle only (no alias); the show_data_layers_menu tool
+  description was shortened by 18 characters to fit the prompt budget.
