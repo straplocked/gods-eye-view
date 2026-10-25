@@ -14,6 +14,7 @@ import {
   isValidPosition,
   toIsoTimestamp,
 } from '../common/geojson.js';
+import { httpsLink, invalidPayload } from '../common/normalize.js';
 
 export const GLOBAL_HAZARDS_LAYER_ID = 'global-hazards';
 
@@ -83,11 +84,6 @@ const EONET_HAZARDS = Object.freeze({
 const ALERT_LEVELS = new Set(['green', 'orange', 'red']);
 const MAX_TEXT = 200;
 
-/** Error for a corrupt or non-collection payload; never cached (keylessFeed). */
-function invalidPayload(detail) {
-  return Object.assign(new Error(detail), { code: 'invalid_payload' });
-}
-
 const text = (value) => {
   if (typeof value !== 'string') return null;
   const trimmed = value.replace(/\s+/g, ' ').trim();
@@ -96,20 +92,6 @@ const text = (value) => {
 
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
-
-/** An https link on one of the allowed hosts, or null. */
-function httpsLink(value, hosts = null) {
-  if (typeof value !== 'string' || value.length > 2048) return null;
-  let url;
-  try {
-    url = new URL(value);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== 'https:' || url.username || url.password) return null;
-  if (hosts && !hosts.includes(url.hostname)) return null;
-  return url.href;
-}
 
 function collectionFeatures(payload, label) {
   if (!isObject(payload) || !Array.isArray(payload.features))

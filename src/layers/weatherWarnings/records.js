@@ -16,6 +16,7 @@ import {
   isValidPosition,
   toIsoTimestamp,
 } from '../common/geojson.js';
+import { httpsLink, invalidPayload } from '../common/normalize.js';
 
 export const WEATHER_WARNINGS_LAYER_ID = 'weather-warnings';
 
@@ -80,11 +81,6 @@ const MAX_TEXT = 300;
 const MAX_ALERTS = 4000;
 const TSUNAMI_MAX_AGE_MS = 3 * 24 * 3600 * 1000;
 
-/** Error for a corrupt or non-collection payload; never cached (keylessFeed). */
-function invalidPayload(detail) {
-  return Object.assign(new Error(detail), { code: 'invalid_payload' });
-}
-
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -93,20 +89,6 @@ const text = (value, max = MAX_TEXT) => {
   const trimmed = value.replace(/\s+/g, ' ').trim();
   return trimmed ? trimmed.slice(0, max) : null;
 };
-
-/** An https link on one of the allowed hosts, or null. */
-function httpsLink(value, hosts) {
-  if (typeof value !== 'string' || value.length > 2048) return null;
-  let url;
-  try {
-    url = new URL(value.trim());
-  } catch {
-    return null;
-  }
-  if (url.protocol !== 'https:' || url.username || url.password) return null;
-  if (!hosts.includes(url.hostname)) return null;
-  return url.href;
-}
 
 /** An `http:` weather.gov link read as its https equivalent. */
 function upgradeNwsLink(value) {

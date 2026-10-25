@@ -14,6 +14,7 @@
  * @module layers/spaceWeather/records
  */
 import { toIsoTimestamp } from '../common/geojson.js';
+import { invalidPayload } from '../common/normalize.js';
 
 export const SPACE_WEATHER_LAYER_ID = 'space-weather';
 
@@ -57,11 +58,6 @@ export const AURORA_MAX_VERTICES = 25_000;
 const CHUNK_COUNT = 360 / AURORA_CHUNK_DEGREES;
 const NORTH = 'north';
 const SOUTH = 'south';
-
-/** Error for a corrupt or non-collection payload; never cached (keylessFeed). */
-function invalidPayload(detail) {
-  return Object.assign(new Error(detail), { code: 'invalid_payload' });
-}
 
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);

@@ -58,9 +58,19 @@ Each subsource's `fetchSnapshot(context)` receives:
   the cap, as a `Uint8Array`. GDELT's zip is unpacked by
   `server/providers/common/zip.js` (`readSingleEntryZip()`), a small reader for
   an archive that must hold exactly one entry.
+- Every helper above also takes `headers` (a plain object, merged over the
+  kit's User-Agent) and `retries` (default 0): the request is asked again that
+  many times while the upstream answers a non-2xx status (NWPS and Safecast
+  answer 502/504 under load). Timeouts, aborts and corrupt bodies are never
+  retried.
 - `fetchImpl(url, init)`: the raw wrapped fetch for anything else (headers must
   be a plain object).
 - `signal`, `now`.
+
+The kit also exports `mapLimited(items, limit, task)` for a subsource that
+reads many upstream URLs (NWPS tiles, TFR XNOTAM downloads): at most `limit`
+tasks in flight, results in item order, and the first rejection rejects the
+call and stops new tasks. A task that may skip one item catches its own error.
 
 It resolves a FeatureCollection whose features have a non-empty string `id`
 unique within the subsource, and throws on a corrupt payload. The collection
@@ -70,8 +80,12 @@ subsource's `metadata.sources[]` entry; keys that clash with the kit's own
 (`id`, `ok`, `stale`, `count`, `fetchedAt`, `truncated`, `error`) and structured
 values are dropped. Weather & Tsunami Warnings reports `pendingZones` this way. Normalizers live
 in `src/layers/<family>/records.js` (pure, portable) and mark a corrupt payload
-with `Object.assign(new Error(detail), {code: 'invalid_payload'})`, because a
-portable module cannot import the server kit.
+with `invalidPayload(detail)` from `src/layers/common/normalize.js` (a plain
+error with `code: 'invalid_payload'`, because a portable module cannot import
+the server kit). That module also holds `toNumber()` (finite number from a
+number or numeric string) and `httpsLink(value, hosts)` (credential-free https
+links, optionally limited to a host list or a host RegExp); use them rather
+than a local copy.
 
 The kit then:
 
@@ -207,7 +221,7 @@ Read the Global Hazards files as the worked example.
    out-of-range coordinates, missing ids, open rings: use `isValidGeometry()`),
    throw `{code: 'invalid_payload'}` for a corrupt or non-collection payload,
    convert times with `toIsoTimestamp()` into `properties.timestamp`, and pass
-   on only `https:` links.
+   on only `https:` links (`httpsLink()` from `src/layers/common/normalize.js`).
 2. **Provider** `server/providers/<family>.js`: `createKeylessFeedProxy()` with
    one subsource per upstream; register it in `localProviderPlugins()` in
    `server/providers/local.js`. Respect each upstream's cadence (TTL at least

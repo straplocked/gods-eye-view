@@ -28,6 +28,7 @@ import {
   firstChild,
   parseXml,
 } from './xml.js';
+import { invalidPayload, toNumber } from '../common/normalize.js';
 
 export const AIRSPACE_LAYER_ID = 'airspace';
 
@@ -71,11 +72,6 @@ const MAX_DESCRIPTION = 160;
 const MAX_REASON = 240;
 const MAX_NAME = 80;
 
-/** Error for a corrupt or non-collection payload; never cached (keylessFeed). */
-function invalidPayload(detail) {
-  return Object.assign(new Error(detail), { code: 'invalid_payload' });
-}
-
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -85,14 +81,6 @@ function clip(value, limit) {
     .replace(/\s+/g, ' ')
     .trim();
   return text.length > limit ? `${text.slice(0, limit - 1).trimEnd()}…` : text;
-}
-
-/** A finite number from a numeric string, else null ('' is null). */
-function toNumber(value) {
-  if (typeof value !== 'string' && typeof value !== 'number') return null;
-  if (typeof value === 'string' && !value.trim()) return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
 }
 
 const round5 = (value) => Math.round(value * 1e5) / 1e5;

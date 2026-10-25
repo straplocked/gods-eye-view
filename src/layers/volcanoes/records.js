@@ -12,6 +12,7 @@
  * @module layers/volcanoes/records
  */
 import { isValidPosition, toIsoTimestamp } from '../common/geojson.js';
+import { httpsLink, invalidPayload } from '../common/normalize.js';
 
 export const VOLCANOES_LAYER_ID = 'volcanoes';
 
@@ -63,11 +64,6 @@ const NOTICE_TIME =
   /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2}))$/;
 const USGS_LINK_HOSTS = /(?:^|\.)(?:usgs\.gov|alaska\.edu|volcano\.si\.edu)$/;
 
-/** Error for a corrupt or non-collection payload; never cached (keylessFeed). */
-function invalidPayload(detail) {
-  return Object.assign(new Error(detail), { code: 'invalid_payload' });
-}
-
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -76,20 +72,6 @@ const text = (value, limit = MAX_TEXT) => {
   const trimmed = value.replace(/\s+/g, ' ').trim();
   return trimmed ? trimmed.slice(0, limit) : null;
 };
-
-/** An https link (no credentials) whose hostname passes `hostTest`, or null. */
-function httpsLink(value, hostTest) {
-  if (typeof value !== 'string' || value.length > 2048) return null;
-  let url;
-  try {
-    url = new URL(value);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== 'https:' || url.username || url.password) return null;
-  if (hostTest && !hostTest.test(url.hostname)) return null;
-  return url.href;
-}
 
 /** The GVP page for one volcano (the number is digits only). */
 export function gvpVolcanoUrl(vnum) {

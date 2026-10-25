@@ -22,6 +22,8 @@
  * @module layers/citizenSensors/records
  */
 
+import { invalidPayload, toNumber } from '../common/normalize.js';
+
 export const CITIZEN_SENSORS_LAYER_ID = 'citizen-sensors';
 
 /** Sensor.Community 5-minute dust readings (JSON, ~4.3 MB, published about every 5 minutes). */
@@ -88,21 +90,8 @@ export const AQI_CATEGORIES = Object.freeze(
   AQI_BREAKPOINTS.map(([category]) => category),
 );
 
-/** Error for a corrupt or non-collection payload; never cached (keylessFeed). */
-function invalidPayload(detail) {
-  return Object.assign(new Error(detail), { code: 'invalid_payload' });
-}
-
 const isObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
-
-/** A finite number from a number or numeric string, else null. */
-function toNumber(value) {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (typeof value !== 'string' || !value.trim()) return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
-}
 
 const inRange = (value, min, max) =>
   value !== null && value >= min && value <= max ? value : null;

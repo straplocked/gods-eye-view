@@ -8,6 +8,7 @@ import {
   invalidPayload,
   keylessErrorCode,
   keylessLayerRoute,
+  mapLimited,
 } from './keylessFeed.js';
 import { assertValidKeylessLayerCollection } from '../../../src/testSupport/geojson.mjs';
 
@@ -337,6 +338,72 @@ test('upstream client maps empty statuses, HTTP errors and caps', async () => {
     client(() => new Response('x'.repeat(17))).fetchText('u'),
     { code: 'RESPONSE_TOO_LARGE' },
   );
+});
+
+test('upstream client retries an HTTP error only when asked, and only that', async () => {
+  const signal = new AbortController().signal;
+  const counting = (responses) => {
+    const calls = { count: 0 };
+    const client = createUpstreamClient({
+      fetchImpl: async () =>
+        responses[Math.min(calls.count++, responses.length - 1)](),
+      signal,
+      maxBytes: 64,
+    });
+    return { client, calls };
+  };
+  const flaky = counting([
+    () => new Response('{}', { status: 504 }),
+    () => new Response('{"ok":1}'),
+  ]);
+  assert.deepEqual(await flaky.client.fetchJson('u', { retries: 1 }), {
+    ok: 1,
+  });
+  assert.equal(flaky.calls.count, 2);
+
+  const once = counting([
+    () => new Response('{}', { status: 504 }),
+    () => new Response('{"ok":1}'),
+  ]);
+  await assert.rejects(once.client.fetchJson('u'), { code: 'upstream_status' });
+  assert.equal(once.calls.count, 1, 'no retry unless asked');
+
+  const down = counting([() => new Response('{}', { status: 503 })]);
+  await assert.rejects(down.client.fetchJson('u', { retries: 1 }), {
+    code: 'upstream_status',
+  });
+  assert.equal(down.calls.count, 2, 'one retry, then the error');
+
+  const corrupt = counting([() => new Response('not json')]);
+  await assert.rejects(corrupt.client.fetchJson('u', { retries: 3 }), {
+    code: 'invalid_payload',
+  });
+  assert.equal(corrupt.calls.count, 1, 'a corrupt body is not retried');
+});
+
+test('mapLimited keeps order, bounds concurrency and stops on the first failure', async () => {
+  let active = 0;
+  let peak = 0;
+  const results = await mapLimited([30, 10, 20, 0], 2, async (ms, index) => {
+    active += 1;
+    peak = Math.max(peak, active);
+    await new Promise((resolve) => setTimeout(resolve, ms));
+    active -= 1;
+    return `${index}:${ms}`;
+  });
+  assert.deepEqual(results, ['0:30', '1:10', '2:20', '3:0']);
+  assert.equal(peak, 2);
+  assert.deepEqual(await mapLimited([], 3, async () => 1), []);
+
+  const started = [];
+  await assert.rejects(
+    mapLimited(['a', 'b', 'c', 'd'], 1, async (item) => {
+      started.push(item);
+      if (item === 'b') throw new Error('boom');
+    }),
+    /boom/,
+  );
+  assert.deepEqual(started, ['a', 'b']);
 });
 
 test('upstream client gunzips .gz text bodies under a decoded cap', async () => {
