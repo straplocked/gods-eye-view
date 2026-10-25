@@ -263,6 +263,12 @@ const layers = [
     noQuery: 'METAR points and advisory areas',
   },
   {
+    id: 'airspace',
+    aliases: [],
+    context: false,
+    noQuery: 'TFR areas and airport delay points',
+  },
+  {
     id: 'weather-cyclones',
     aliases: ['cyclones', 'hurricanes', 'typhoons', 'tropical storms'],
     context: false,

@@ -1,5 +1,6 @@
 [
   ["air-quality", "4"],
+  ["airspace", "00"],
   ["ais-live-vessels", "a"],
   ["alpr-cameras", "p"],
   ["aviation-weather", "9"],

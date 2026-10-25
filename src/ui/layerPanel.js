@@ -76,6 +76,7 @@ const PANEL_GROUPS = [
       'volcanoes',
       'space-weather',
       'gnss-integrity',
+      'airspace',
     ],
   },
   {

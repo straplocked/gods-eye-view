@@ -367,8 +367,14 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // ceiling by 50 to 52,300 so the layer keeps its voice toggle rather than
   // going voice-off (a pilot-facing layer people will ask for by name); 13
   // characters are spare, so the next keyless layer has the same decision.
+  // Airspace is the sixth: a toggle with no alias costs 22 characters
+  // (52,309) against 13 spare. Decision: raise the ceiling by 50 to 52,350 so
+  // the layer keeps its voice toggle rather than going voice-off (airspace
+  // restrictions are something pilots and drone operators ask for by name);
+  // 41 characters are spare. This is the fourth raise in a row: the next
+  // keyless layer should trim the prompt or the manifest instead.
   const size = instructions.length + JSON.stringify(GEV_REALTIME_TOOLS).length;
-  assert.ok(size <= 52300, `prompt size ${size}`);
+  assert.ok(size <= 52350, `prompt size ${size}`);
 });
 
 

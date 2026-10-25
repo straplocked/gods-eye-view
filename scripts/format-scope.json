@@ -1125,5 +1125,12 @@
   "src/layers/aviationWeather/source.test.mjs",
   "src/layers/aviationWeather/cards.test.mjs",
   "src/layers/aviationWeather/ownership.test.mjs",
-  "src/testSupport/aviationWeatherFixtures.mjs"
+  "src/testSupport/aviationWeatherFixtures.mjs",
+  "src/data/airspaceProxy.test.mjs",
+  "src/layers/airspace/records.test.mjs",
+  "src/layers/airspace/xml.test.mjs",
+  "src/layers/airspace/source.test.mjs",
+  "src/layers/airspace/cards.test.mjs",
+  "src/layers/airspace/ownership.test.mjs",
+  "src/testSupport/airspaceFixtures.mjs"
 ]
