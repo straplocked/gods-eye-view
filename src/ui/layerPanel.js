@@ -90,6 +90,7 @@ const PANEL_GROUPS = [
       'weather-cyclones',
       'weather-warnings',
       'aviation-weather',
+      'water-observations',
     ],
   },
   {

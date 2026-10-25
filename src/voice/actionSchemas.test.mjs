@@ -45,8 +45,9 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // Global Hazards (the first keyless-feed layer) extends the manifest;
     // Weather & Tsunami Warnings adds a toggle-only entry; Volcanoes adds another;
     // Aurora & Space Weather adds a fourth; Aviation Weather adds a fifth;
-    // Airspace adds a sixth.
-    'a328898c283dd41d81d783bb7a39948c1b2f56492ad96f7a3c1a5e97c2119434',
+    // Airspace adds a sixth; Buoys & River Gauges adds a seventh (and trims the
+    // show_data_layers_menu description to make room).
+    '385e73913971194a98d6334ef31613341b4fbe3f6f3d87de8ce8a8ab878d7054',
   );
 });
 

@@ -269,6 +269,12 @@ const layers = [
     noQuery: 'TFR areas and airport delay points',
   },
   {
+    id: 'water-observations',
+    aliases: [],
+    context: false,
+    noQuery: 'buoy and river gauge points',
+  },
+  {
     id: 'weather-cyclones',
     aliases: ['cyclones', 'hurricanes', 'typhoons', 'tropical storms'],
     context: false,

@@ -373,6 +373,11 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // restrictions are something pilots and drone operators ask for by name);
   // 41 characters are spare. This is the fourth raise in a row: the next
   // keyless layer should trim the prompt or the manifest instead.
+  // Buoys & River Gauges is the seventh: its id is 18 characters in two enums,
+  // so the toggle alone costs 42 (52,351) against 41 spare. Decision: trim,
+  // not raise. The show_data_layers_menu description lost "dropdown/" and
+  // "specific" (18 characters, same meaning), which leaves the prompt at
+  // 52,333 under the unchanged 52,350 ceiling and 17 characters spare.
   const size = instructions.length + JSON.stringify(GEV_REALTIME_TOOLS).length;
   assert.ok(size <= 52350, `prompt size ${size}`);
 });

@@ -9,6 +9,7 @@ import { createVolcanoesSource } from '../layers/volcanoes/source.js';
 import { createSpaceWeatherSource } from '../layers/spaceWeather/source.js';
 import { createAviationWeatherSource } from '../layers/aviationWeather/source.js';
 import { createAirspaceSource } from '../layers/airspace/source.js';
+import { createWaterObservationsSource } from '../layers/waterObservations/source.js';
 
 /** Construct the existing reference feeds independently of application setup. */
 export function createReferenceSources() {
@@ -24,5 +25,6 @@ export function createReferenceSources() {
     'space-weather': createSpaceWeatherSource(),
     'aviation-weather': createAviationWeatherSource(),
     airspace: createAirspaceSource(),
+    'water-observations': createWaterObservationsSource(),
   };
 }

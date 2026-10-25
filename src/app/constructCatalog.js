@@ -33,6 +33,7 @@ import { createApplicationVolcanoes } from './layers/volcanoes.js';
 import { createApplicationSpaceWeather } from './layers/spaceWeather.js';
 import { createApplicationAviationWeather } from './layers/aviationWeather.js';
 import { createApplicationAirspace } from './layers/airspace.js';
+import { createApplicationWaterObservations } from './layers/waterObservations.js';
 import { createApplicationCables } from './layers/submarineCables.js';
 import { createApplicationStreetLevel } from './layers/streetLevel.js';
 import { createInfrastructureLayers } from '../data/infrastructure.js';
@@ -144,6 +145,9 @@ export function createApplicationCatalog({
           source: sources['aviation-weather'],
         }),
         createApplicationAirspace({ source: sources.airspace }),
+        createApplicationWaterObservations({
+          source: sources['water-observations'],
+        }),
         createApplicationAlpr({ surface, source: sources.alpr }),
         createApplicationStreetLevel({
           surface,

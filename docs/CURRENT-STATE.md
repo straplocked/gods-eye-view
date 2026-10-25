@@ -3724,6 +3724,7 @@ its criteria cannot be silently ignored.
 | Aurora & Space Weather 🌌 (`space-weather`) | NOAA SWPC OVATION aurora nowcast (1° grid traced into probability-band areas, 10 % and up) + latest planetary Kp / NOAA G-scale in the row and card; keyless | `src/layers/spaceWeather/` via `src/app/layers/spaceWeather.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/space-weather` (+ `/status`) | 5 min (server caches: aurora 5 min, Kp 15 min) |
 | Aviation Weather 🛩️ (`aviation-weather`) | NOAA AWC METARs worldwide (bulk cache file, points colored by flight category) + US and international SIGMET/AIRMET advisory areas by hazard; keyless | `src/layers/aviationWeather/` via `src/app/layers/aviationWeather.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/aviation-weather` (+ `/status`) | 5 min (server caches: metar, sigmet, isigmet 5 min each) |
 | Airspace Restrictions & Airport Delays 🚧 (`airspace`) | FAA Temporary Flight Restrictions (list + one XNOTAM download per TFR for the geometry; circles and arcs built into polygons) + FAA NAS Status airport delays (ground stops, ground delay programs, arrival/departure delays, closures) as points at AWC-resolved airport positions; keyless | `src/layers/airspace/` via `src/app/layers/airspace.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/airspace` (+ `/status`) | 5 min (server caches: tfr list 10 min and each TFR's geometry until it leaves the list, delays 5 min, airport positions 7 days) |
+| Buoys & River Gauges 🌊 (`water-observations`) | NOAA NDBC latest observations (buoys and coastal stations, points colored by wind speed) + NWPS river gauges at or above flood action stage (observed or forecast; fetched in eight bounding-box tiles); keyless | `src/layers/waterObservations/` via `src/app/layers/waterObservations.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/water-observations` (+ `/status`) | 15 min (server caches: buoys 15 min, rivers 15 min) |
 | Weather & Tsunami Warnings ⛈️ (`weather-warnings`) | NWS active alerts (areas: the alert polygon, or the union of its NWS zones from a 7-day zone cache) + NOAA tsunami.gov bulletins (PAAQ, PHEB; one point each); keyless | `src/layers/weatherWarnings/` via `src/app/layers/weatherWarnings.js` on the shared kit (`src/layers/common/`) | `/api/v1/layers/weather-warnings` (+ `/status`) | 2 min (server caches: NWS 2 min, tsunami 5 min) |
 
 GNSS Integrity samples a 250 nm circle around the Earth point under the screen
@@ -3864,6 +3865,31 @@ AWC airport lookup (`K` + the FAA code, or a small code table for Alaska,
 Hawaii and the territories) and cached for 7 days in server memory. Informational
 only: not for flight planning; the NOTAM text governs. Voice: toggle only (the
 Realtime prompt ceiling was raised to 52,350).
+
+Buoys & River Gauges (`water-observations`, layer token `01`) is the seventh layer
+on the kit. The `buoys` subsource reads NDBC's `latest_obs.txt` (one text file,
+about 100 KB, whitespace-delimited with `MM` for a value not reported) and
+serves one point per station that reported in the last 6 hours, about 850:
+wind direction, speed and gust in m/s and knots, wave height and period,
+pressure and its 3-hour change, air, water and dew-point temperature,
+visibility and tide, each `null` where the station did not report it (never 0).
+The `rivers` subsource reads the NWS National Water Prediction Service gauge
+list, which carries the observed and forecast flood category of every gauge:
+about 13,000 gauges, 13 MB, 40 seconds or more (and sometimes a 504) when asked
+for whole, so the server asks for eight overlapping bounding boxes covering the
+US, three at a time, retries a failed tile once, and keeps only the gauges whose
+observed or forecast category is action stage, minor, moderate or major (about
+170). A tile that still fails fails the whole subsource, and the last good
+snapshot is served stale: a region that did not answer must not read as "no
+flooding". If the tiles together list fewer than 1,000 gauges the answer is
+treated as broken rather than as a flood-free country. USGS Water Services was
+not needed: it has no flood categories and tens of thousands of sites. Buoys are
+colored by sustained wind (under 11, 11 to 21, 22 to 33, 34 to 47, 48 knots and
+over) and larger in higher seas; gauges are colored by flood category with a
+white ring while flooding now. Informational only: not for navigation, and not
+a flood warning. Voice: toggle only; the new entry would have put the Realtime
+prompt one character over its ceiling, so the `show_data_layers_menu`
+description was trimmed by 18 characters instead of raising the ceiling again.
 
 Street Level is a docked, collapsible right-rail panel (`#street-level-panel`,
 layer token `0`, option owner `street-level`, panel `ui` token `t`) that starts

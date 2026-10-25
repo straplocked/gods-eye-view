@@ -99,7 +99,7 @@ export const ACTION_DESCRIPTIONS = {
   },
   show_data_layers_menu: {
     description:
-      'Open the data layers dropdown/menu and optionally scroll to a specific layer row without toggling it.',
+      'Open the data layers menu and optionally scroll to a layer row without toggling it.',
     $position: 1,
     parameters: {
       properties: {
