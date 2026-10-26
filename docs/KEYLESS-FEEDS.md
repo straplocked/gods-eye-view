@@ -188,8 +188,18 @@ createKeylessFeatureLayer({
 
 - Points are clamped `PointGraphics`; lines are clamped polylines; polygons
   are a translucent fill plus a clamped outline. Entities are rebuilt in one
-  suspended batch and only when the snapshot changed; nothing runs per frame,
-  so the render governor needs no hold.
+  suspended batch and only when the snapshot changed.
+- **Horizon cull (built in, every layer).** The Cesium globe is hidden (Google
+  3D Tiles draw the planet), so nothing writes far-side depth, and points
+  disable the depth test so terrain cannot swallow them. Without a cull, a
+  marker on the far side of the Earth draws through the planet. While a layer
+  is enabled, a scene `preRender` listener tests each point (lifted 50 m)
+  against an `EllipsoidalOccluder` and each line/area's bounding sphere
+  against an inscribed WGS84 sphere, and flips `entity.show` only on change.
+  It skips the pass while the camera is still and never requests frames of its
+  own then, so the render governor needs no hold. A huge area that is only
+  partly behind the horizon stays drawn whole (the test is conservative).
+  Guard: `src/layers/common/featureLayer.test.mjs`.
 - A style with `clampToGround: false` draws points on the ellipsoid instead of
   clamping each one to terrain; Aviation Weather uses it for its ~5,000 METAR
   points (the depth test is already disabled for points, so they still draw

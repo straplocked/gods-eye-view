@@ -1096,6 +1096,7 @@
   "src/data/globalHazardsProxy.test.mjs",
   "src/layers/common/geojson.test.mjs",
   "src/layers/common/normalize.test.mjs",
+  "src/layers/common/featureLayer.test.mjs",
   "src/layers/common/featureModel.test.mjs",
   "src/layers/globalHazards/records.test.mjs",
   "src/layers/globalHazards/source.test.mjs",

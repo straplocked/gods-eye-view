@@ -7,9 +7,19 @@
  *
  * Lifecycle follows the earthquake and fire-perimeter layers: one request
  * token aborted on disable/destroy, late results dropped, entities swapped in
- * one suspended batch only when the snapshot changed, no per-frame work (the
- * render governor needs no hold). World text goes through the overlay host
- * only; Cesium text labels are forbidden.
+ * one suspended batch only when the snapshot changed. The only per-frame work
+ * is a horizon cull (below), which never requests frames of its own while the
+ * camera is still, so the render governor needs no hold. World text goes
+ * through the overlay host only; Cesium text labels are forbidden.
+ *
+ * Horizon cull: the Cesium globe is hidden in this app (Google 3D Tiles draw
+ * the planet), so nothing writes far-side depth, and points here disable the
+ * depth test so terrain cannot swallow them. Without a cull, markers on the
+ * opposite side of the Earth draw through the planet. Each point is tested
+ * against an EllipsoidalOccluder and each line/area's bounding sphere against
+ * an inscribed WGS84 sphere (conservative: a partly visible area stays), on
+ * scene preRender while enabled — the same pattern as the cyclone, FIRMS,
+ * flights and CCTV layers.
  * @module layers/common/featureLayer
  */
 import * as Cesium from 'cesium';
@@ -41,6 +51,71 @@ const DEFAULT_STYLE = Object.freeze({
 });
 
 const toCartesian = ([lon, lat]) => Cesium.Cartesian3.fromDegrees(lon, lat);
+
+/** Points within this lift of the surface are tested at the lifted height, so
+ * a marker sitting exactly on the horizon does not flicker. */
+const CULL_LIFT_M = 50;
+
+/** Camera moves smaller than this (meters) skip the cull pass. */
+const CULL_MOVE_EPSILON_M = 1;
+
+/**
+ * Horizon-cull a list of entity parts: `{entity, position}` for points,
+ * `{entity, sphere}` for lines and areas. Writes `entity.show` only when it
+ * flips. Returns whether anything changed. Pure apart from those writes, so it
+ * is unit-testable with stub occluders.
+ * @param {Array<{entity: Object, position?: Object, sphere?: Object}>} parts
+ * @param {{isPointVisible: function(Object): boolean}} pointOccluder
+ * @param {{isBoundingSphereVisible: function(Object): boolean}} sphereOccluder
+ * @returns {boolean}
+ */
+export function cullHorizonParts(parts, pointOccluder, sphereOccluder) {
+  let changed = false;
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    const show = part.position
+      ? pointOccluder.isPointVisible(part.position)
+      : sphereOccluder.isBoundingSphereVisible(part.sphere);
+    if (part.entity.show !== show) {
+      part.entity.show = show;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+/** The surface position lifted by CULL_LIFT_M, as the point's cull anchor. */
+function cullPosition([lon, lat]) {
+  return Cesium.Cartesian3.fromDegrees(lon, lat, CULL_LIFT_M);
+}
+
+/** Bounding sphere of the lon/lat positions of one line/area part. */
+function cullSphere(lonLats) {
+  return Cesium.BoundingSphere.fromPoints(lonLats.map(toCartesian));
+}
+
+/** Cull anchors for one geometry part, index-aligned with geometryParts(). */
+function cullAnchors(geometry) {
+  const c = geometry.coordinates;
+  switch (geometry.type) {
+    case 'Point':
+      return [{ position: cullPosition(c) }];
+    case 'MultiPoint':
+      return c.map((position) => ({ position: cullPosition(position) }));
+    case 'LineString':
+      return [{ sphere: cullSphere(c) }];
+    case 'MultiLineString':
+      return c.map((line) => ({ sphere: cullSphere(line) }));
+    case 'Polygon':
+      return [{ sphere: cullSphere(c[0]) }];
+    case 'MultiPolygon':
+      return c.map((polygon) => ({ sphere: cullSphere(polygon[0]) }));
+    case 'GeometryCollection':
+      return geometry.geometries.flatMap(cullAnchors);
+    default:
+      return [];
+  }
+}
 
 function pointGraphics(style, color) {
   return {
@@ -205,6 +280,61 @@ export function createKeylessFeatureLayer({
   const _entityFeature = new Map();
   /** Entity ids of point parts, the only picks this layer claims. */
   const _pointEntities = new Set();
+  /** @type {Array<{entity: Object, position?: Object, sphere?: Object}>} */
+  let _cullParts = [];
+  let _pointOccluder = null;
+  let _sphereOccluder = null;
+  let _removePreRender = null;
+  let _lastCullCamera = null;
+  let _cullDirty = true;
+
+  /** preRender: hide parts behind the planet; skipped while the camera rests. */
+  function cullHorizon() {
+    if (!_viewer || !_cullParts.length) return;
+    const camera = _viewer.camera.positionWC;
+    if (
+      !_cullDirty &&
+      _lastCullCamera &&
+      Cesium.Cartesian3.equalsEpsilon(
+        camera,
+        _lastCullCamera,
+        0,
+        CULL_MOVE_EPSILON_M,
+      )
+    )
+      return;
+    _lastCullCamera = Cesium.Cartesian3.clone(camera, _lastCullCamera);
+    _cullDirty = false;
+    _pointOccluder.cameraPosition = camera;
+    _sphereOccluder.cameraPosition = camera;
+    if (cullHorizonParts(_cullParts, _pointOccluder, _sphereOccluder))
+      _viewer.scene.requestRender?.();
+  }
+
+  function installHorizonCull() {
+    const preRender = _viewer?.scene?.preRender;
+    if (_removePreRender || !preRender?.addEventListener || !_viewer.camera)
+      return;
+    _pointOccluder ||= new Cesium.EllipsoidalOccluder(
+      Cesium.Ellipsoid.WGS84,
+      _viewer.camera.positionWC,
+    );
+    _sphereOccluder ||= new Cesium.Occluder(
+      new Cesium.BoundingSphere(
+        Cesium.Cartesian3.ZERO,
+        Cesium.Ellipsoid.WGS84.minimumRadius,
+      ),
+      _viewer.camera.positionWC,
+    );
+    _cullDirty = true;
+    _removePreRender = preRender.addEventListener(cullHorizon);
+  }
+
+  function removeHorizonCull() {
+    _removePreRender?.();
+    _removePreRender = null;
+    _lastCullCamera = null;
+  }
 
   const canSelect = () =>
     Boolean(overlayHost && screenSpaceEventHandlerFactory && picking);
@@ -275,6 +405,7 @@ export function createKeylessFeatureLayer({
     if (!_dataSource) return;
     const shown = visibleFeatures(_features, _hidden);
     const entities = [];
+    const cullParts = [];
     _rendered.clear();
     _entityFeature.clear();
     _pointEntities.clear();
@@ -283,12 +414,15 @@ export function createKeylessFeatureLayer({
       if (!anchor) continue;
       const featureStyle = { ...DEFAULT_STYLE, ...(style(feature) || {}) };
       const color = Cesium.Color.fromCssColorString(featureStyle.color);
+      const anchors = cullAnchors(feature.geometry);
       geometryParts(feature.geometry, featureStyle, color).forEach(
         ({ kind, ...graphics }, index) => {
           const entityId = `${id}:${feature.id}:${index}`;
           _entityFeature.set(entityId, feature.id);
           if (kind === 'point') _pointEntities.add(entityId);
-          entities.push(new Cesium.Entity({ id: entityId, ...graphics }));
+          const entity = new Cesium.Entity({ id: entityId, ...graphics });
+          entities.push(entity);
+          if (anchors[index]) cullParts.push({ entity, ...anchors[index] });
         },
       );
       _rendered.set(feature.id, { feature, anchor });
@@ -301,6 +435,10 @@ export function createKeylessFeatureLayer({
     } finally {
       collection.resumeEvents();
     }
+    _cullParts = cullParts;
+    _cullDirty = true;
+    // Cull the new entities before the first frame shows them.
+    if (_removePreRender) cullHorizon();
     _count = _rendered.size;
     if (_selectedId) publishSelectedCard();
   }
@@ -387,6 +525,7 @@ export function createKeylessFeatureLayer({
       if (_dataSource) _dataSource.show = true;
       overlayHost?.setVisible?.(id, true);
       installClickHandler();
+      installHorizonCull();
     },
 
     disable() {
@@ -395,6 +534,7 @@ export function createKeylessFeatureLayer({
       _enabled = false;
       if (_dataSource) _dataSource.show = false;
       removeClickHandler();
+      removeHorizonCull();
       clearSelection();
     },
 
@@ -437,7 +577,9 @@ export function createKeylessFeatureLayer({
       _request?.abort();
       _request = null;
       removeClickHandler();
+      removeHorizonCull();
       clearSelection();
+      _cullParts = [];
       _rendered.clear();
       _entityFeature.clear();
       _pointEntities.clear();
